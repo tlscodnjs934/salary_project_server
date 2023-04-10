@@ -11,6 +11,12 @@ import java.util.HashMap;
 @Repository
 public interface MemberDAO {
 
+    //회원 목록 조회
     ArrayList<HashMap<String, Object>> findAll();
-    ArrayList<HashMap<String, Object>> joinMember();
+
+    //ID로 해당 회원 찾기
+    HashMap<String, Object> findMemberByID(HashMap<String, Object> param);
+    
+    //회원 등록
+    int joinMember(HashMap<String, Object> param);
 }
