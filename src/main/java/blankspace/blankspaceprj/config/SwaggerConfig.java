@@ -10,25 +10,28 @@ import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
-import java.util.Arrays;
 
 @Configuration
 @EnableSwagger2
 public class SwaggerConfig {
     @Bean
     public Docket api() {
-        return new Docket(DocumentationType.OAS_30)
+        return new Docket(DocumentationType.SWAGGER_2)
+                .apiInfo(apiInfo())
                 .select()
-                .apis(RequestHandlerSelectors.any())
+                .apis(RequestHandlerSelectors.basePackage("blankspace.blankspaceprj"))
                 .paths(PathSelectors.any())
                 .build();
     }
 
-    public ApiInfo apiInfo() {
+    // 화면에 보여질 설정값들
+    private ApiInfo apiInfo() {
         return new ApiInfoBuilder()
-                .title("SpringBoot Rest API Documentation")
-                .description("3rd UMC Server: BAEMIN Clone coding - ?조")
-                .version("0.1")
+                .title("끌린더 API 목록")
+                .description("끌린더에서 호출가능한 컨트롤러 목록입니다.")
+                .version("1.0")
                 .build();
     }
+
+
 }
