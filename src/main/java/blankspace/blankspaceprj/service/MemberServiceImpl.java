@@ -11,6 +11,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.util.MapUtils;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -28,6 +29,9 @@ public class MemberServiceImpl {
 
     @Autowired
     HttpSession httpSession;
+
+    @Autowired
+    HttpServletRequest httpServletRequest;
 
     @Value("${kakao.rest.api.token.url}")
     String kakaoRestApiTokenUrl;
@@ -53,22 +57,38 @@ public class MemberServiceImpl {
 
     //회원가입 서비스
     public HashMap<String, Object> joinMember(HashMap<String, Object> param){
-        logger.debug("****joinMember start****  param : " + param.toString());
+        logger.info("****joinMember start****  param : " + param.toString());
+
+        if(!MapUtils.containsKey(param, "ID")){
+            param.put("resultCode", "1");
+            param.put("resultMsg", "회원 ID가 입력되지 않았습니다.");
+            return param;
+        }
+
+        if(!MapUtils.containsKey(param, "AUTH_TYPE")){
+            param.put("resultCode", "1");
+            param.put("resultMsg", "인증타입이 입력되지 않았습니다.");
+            return param;
+        }
+
         //1.기존 회원 존재하는지 조회
         HashMap<String, Object> member;
         member = memberDAO.findMemberByID(param);
 
         if(!MapUtils.isEmpty(member)){
-            logger.debug("****이미 가입된 회원입니다. 회원 ID : " + member.get("ID"));
+            logger.info("****이미 가입된 회원입니다. 회원 ID : " + member.get("ID"));
             param.put("resultCode", "1");
             param.put("resultMsg", "이미 가입된 회원입니다. 회원 ID :" + member.get("ID"));
             return param;
         }
 
 
-        //2.TODO 비번 암호화
-        BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
-        param.put("PASSWORD", bCryptPasswordEncoder.encode(param.get("PASSWORD").toString()));
+        //2.일반회원가입일 경우만 비번 암호화
+        if("normal".equals(param.get("AUTH_TYPE"))) {
+            BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
+            String encode = bCryptPasswordEncoder.encode((String) param.get("PASSWORD"));
+            param.put("PASSWORD", encode);
+        }
 
         //3.회원 등록
         int cnt = memberDAO.joinMember(param);
@@ -250,29 +270,46 @@ public class MemberServiceImpl {
             receivedData.put("AUTH_TYPE", "kakao");
             receivedData.put("AUTH", refreshToken);
 
-            joinMember(receivedData);
+            member = joinMember(receivedData);
         }
-
-        //로그인 진행
-
 
         receivedData.put("resultCode", "0");
         receivedData.put("resultMsg", "");
         return receivedData;
 
 
-
-
     }
 
-    public void login(HashMap param){
+    public HashMap login(HashMap param){
         logger.debug("*********로그인 시작****************" + param);
+        HashMap result = new HashMap();
 
-        httpSession.setAttribute("ID", param.get("ID"));
+
         
-        //TODO 일반 로그인 시에만 암호 복호화해서 비교 필요
+        //TODO 일반 로그인 시에만 암호저장하므로 복호화해서 비교 필요
+        if("normal".equals(param.get("AUTH_TYPE"))) {
+            BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
+
+            HashMap<String, Object> member;
+            member = memberDAO.findMemberByID(param);
+
+            //일반 로그인 시 기존 입력한 패스워드 전송 필요
+            if (bCryptPasswordEncoder.matches((String) param.get("PASSWORD"), (String) member.get("PASSWORD"))) {
+                httpSession.setAttribute("ID", param.get("ID"));
+            } else {
+                logger.info("*****일반 로그인 실패 : 비밀번호 불일치*****"+ param);
+                result.put("resultCode", "-1");
+                result.put("resultMsg", "일반 로그인 실패 : 비밀번호 불일치");
+
+            }
+
+            httpSession = httpServletRequest.getSession();
+            httpSession.setAttribute("sessionID","");
 
 
+        }
 
+
+        return result;
     }
 }
