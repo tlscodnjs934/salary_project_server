@@ -40,6 +40,8 @@ public class MemberController {
     public ResponseEntity<?> joinMember(@RequestBody HashMap<String, Object> param) throws Exception {
         ResultDTO responseDTO = new ResultDTO();
 
+        param.put("AUTH_TYPE", "normal");
+        param.put("AUTH", "normal");
         //회원가입 서비스 호출
         HashMap<String, Object> resultMap = userService.joinMember(param);
 
@@ -84,6 +86,16 @@ public class MemberController {
         ResultDTO responseDTO = new ResultDTO();
 
 
+        return new ResponseEntity<>(responseDTO, HttpStatus.OK);
+    }
+
+    @ApiOperation(value="카카오 회원 가입 수행", notes="카카오 회원 가입을 수행하는 API")
+    @RequestMapping(value = "nomalLogin", method = RequestMethod.POST)
+    @ResponseBody
+    public ResponseEntity<?> nomalLogin(@RequestBody HashMap<String, Object> param) throws Exception {
+        ResultDTO responseDTO = new ResultDTO();
+
+        userService.login(param);
         return new ResponseEntity<>(responseDTO, HttpStatus.OK);
     }
 
