@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="blankspace.blankspaceprj.dao.MemberDAO">
+
+    <select id="findAll" resultType="HashMap">
+        select * from MEMBER
+    </select>
+
+    <select id="findMemberByID" resultType="HashMap" parameterType="HashMap">
+        SELECT
+            ID,
+            AUTH_TYPE,
+            NAME,
+            SALARY,
+            NICKNAME,
+            EMAIL_AUTH_CODE,
+            WORKING_DAY_CNT,
+            PHONE,
+            EMAIL,
+            DAY,
+            AUTH_STATE,
+            RGST_DATE
+        FROM MEMBER
+        WHERE 1=1
+            AND ID = #{ID}
+            AND AUTH_TYPE = #{AUTH_TYPE}
+    </select>
+
+    <insert id="joinMember" parameterType="HashMap">
+        INSERT INTO MEMBER(     /* 회원가입 등록 blankspace.blankspaceprj.dao.MemberDAO.joinMember */
+            ID,
+            AUTH_TYPE,
+            AUTH,
+            NAME,
+            SALARY,
+            NICKNAME,
+            PASSWORD,
+            EMAIL_AUTH_CODE,
+            WORKING_DAY_CNT,
+            PHONE,
+            EMAIL,
+            DAY,
+            RGST_DATE
+        )
+        VALUES (
+            #{ID},
+            #{AUTH_TYPE},
+            #{AUTH},
+            #{NAME},
+            #{SALARY},
+            #{NICKNAME},
+            #{PASSWORD},
+            #{EMAIL_AUTH_CODE},
+            #{WORKING_DAY_CNT},
+            #{PHONE},
+            #{EMAIL},
+            #{DAY},
+            NOW()
+        )
+        ON DUPLICATE KEY
+            UPDATE AUTH = #{AUTH}
+    </insert>
+
+
+
+</mapper>
