@@ -1,6 +1,17 @@
-package blankspace.blankspaceprj;
+package blankspace.blankspaceprj.dto;
 
-public class MemberVo {
+import org.apache.ibatis.mapping.FetchType;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class MemberVO
+        //implements UserDetails
+{
     private String id;
     private String auth;
     private String authType;
@@ -15,6 +26,47 @@ public class MemberVo {
     private String AUTH_STATE;
     private String RGST_DATE;
     private String EMAIL_MODIFY_DATE;
+    private String NAME;
+
+    //@ElementCollection(fetch = FetchType.EAGER) //roles 컬렉션
+    //@Builder.Default
+    private List<String> roles = new ArrayList<>();
+//    @Override   //사용자의 권한 목록 리턴
+//    public Collection<? extends GrantedAuthority> getAuthorities() {
+//        return this.roles.stream()
+//                .map(SimpleGrantedAuthority::new)
+//                .collect(Collectors.toList());
+//    }
+
+    //@Override
+    public String getPassword() {
+        return PASSWORD;
+    }
+
+    //@Override
+    public String getUsername() {
+        return NAME;
+    }
+
+    //@Override
+    public boolean isAccountNonExpired() {
+        return false;
+    }
+
+    //@Override
+    public boolean isAccountNonLocked() {
+        return false;
+    }
+
+    ////@Override
+    public boolean isCredentialsNonExpired() {
+        return false;
+    }
+
+    //@Override
+    public boolean isEnabled() {
+        return false;
+    }
 
     public String getId() {
         return id;
