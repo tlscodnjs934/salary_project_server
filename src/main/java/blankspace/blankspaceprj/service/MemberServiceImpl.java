@@ -1,6 +1,7 @@
 package blankspace.blankspaceprj.service;
 
 import blankspace.blankspaceprj.dao.MemberDAO;
+import blankspace.blankspaceprj.dto.MemberVO;
 import blankspace.blankspaceprj.exception.CustomException;
 import blankspace.blankspaceprj.jwt.JwtTokenProvider;
 import com.google.gson.JsonElement;
@@ -14,12 +15,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.codec.Base64;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Base64Utils;
 import org.thymeleaf.util.MapUtils;
 
+import javax.mail.internet.MimeMessage;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -27,10 +31,7 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 
 @Service
@@ -47,6 +48,9 @@ public class MemberServiceImpl {
 
     @Autowired
     HttpServletResponse httpServletResponse;
+
+    @Autowired
+    JwtTokenProvider jwtTokenProvider;
 
     @Value("${kakao.rest.api.token.url}")
     String kakaoRestApiTokenUrl;
@@ -74,7 +78,7 @@ public class MemberServiceImpl {
 
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-
+    private JavaMailSender javaMailSender ;
 
 
 
@@ -90,8 +94,7 @@ public class MemberServiceImpl {
         if(!MapUtils.containsKey(param, "ID")){
             param.put("resultCode", "");
             param.put("resultMsg", "회원 ID가 입력되지 않았습니다.");
-            //return param;
-            throw new CustomException("1", "회원 ID가 입력되지 않았습니다.");
+            return param;
         }
 
         if(!MapUtils.containsKey(param, "AUTH_TYPE")){
@@ -99,6 +102,24 @@ public class MemberServiceImpl {
             param.put("resultMsg", "인증타입이 입력되지 않았습니다.");
             return param;
         }
+
+        //TODO 앱에서 접근일 경우 앱용 secret key 확인 후 회원가입 필요
+        String userAgent = httpServletRequest.getHeader("User-Agent").toUpperCase();
+
+        if (userAgent.contains("ANDROID") || userAgent.contains("TABLET") || userAgent.contains("IPAD") || userAgent.contains("MOBILE") || userAgent.contains("IPHONE")) {
+            logger.info("APP_JOIN_SECRET_KEY" + param.get("APP_JOIN_SECRET_KEY"));
+
+            BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
+            if(bCryptPasswordEncoder.matches("저장해놓을 암호 키", (String)param.get("APP_JOIN_SECRET_KEY"))){
+                logger.info("앱에서 회원가입 진행 시 key 인증 성공");
+            }else{
+                logger.info("****앱에서 회원가입 진행 시 key 인증 실패 ");
+                param.put("resultCode", "1");
+                param.put("resultMsg", "앱에서 회원가입 진행 시 key 인증 실패" + param.get("APP_SECRET_KEY"));
+                return param;
+            }
+        }
+
 
         //1.기존 회원 존재하는지 조회
         HashMap<String, Object> member;
@@ -306,11 +327,12 @@ public class MemberServiceImpl {
             receivedData.put("resultCode", "0");
             receivedData.put("resultMsg", "카카오 회원가입 성공");
         }else{
-            logger.info("카카오 기존 회원, 회원가입 미진행 : " + receivedData);
+            logger.info("카카오 기존 회원, 회원가입 미진행, 로그인 호출 : " + receivedData);
 
-            //TODO auth 토큰 업데이트 해야?
             receivedData.put("resultCode", "0");
             receivedData.put("resultMsg", "카카오 기존 회원, 회원가입 미진행");
+
+            login(receivedData);
         }
 
         return receivedData;
@@ -481,11 +503,10 @@ public class MemberServiceImpl {
         }else{
             logger.info("네이버 기존 회원, 회원가입 미진행 : " + receivedData);
 
-            //TODO auth 토큰 업데이트 해야?
             receivedData.put("resultCode", "0");
             receivedData.put("resultMsg", "네이버 기존 회원, 회원가입 미진행");
 
-            //로그인 호출
+            login(receivedData);
         }
 
 
@@ -498,12 +519,12 @@ public class MemberServiceImpl {
     public HashMap login(HashMap param){
         logger.debug("*********login 로그인 시작****************" + param);
         HashMap result = new HashMap();
+        HashMap<String, Object> member = new HashMap();;
         
         //TODO 일반 로그인 시에만 암호저장하므로 복호화해서 비교 필요
         if("normal".equals(param.get("AUTH_TYPE"))) {
             BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
 
-            HashMap<String, Object> member;
             member = memberDAO.findMemberByID(param);
 
             //일반 로그인 시 기존 입력한 패스워드 전송 필요
@@ -520,29 +541,100 @@ public class MemberServiceImpl {
 
         }
 
-        //httpSession = httpServletRequest.getSession();
-        //httpSession.setAttribute("sessionID","AUTH");
-
         //일반 로그인 or 토큰 만료 시.....새 토큰 재발급 필요
-        if(param.get("AUTH") == null){
-            param.put("AUTH", JwtTokenProvider.getRandomToken());
-        }
+        //if(param.get("AUTH") == null){
+            //param.put("AUTH", JwtTokenProvider.getRandomToken());
+            String token = jwtTokenProvider.createToken(param.get("ID").toString());
+            param.put("AUTH", token);
 
-        String token = Jwts.builder()
-                .setSubject((String) param.get("AUTH"))
-                .signWith(SignatureAlgorithm.HS256, jwtSecretKey)
-                .setExpiration(new Date(System.currentTimeMillis() + 86400000))
-                .compact();
+        //}
 
-        logger.info("token : " + token);
+        logger.info("token : " + param.get("AUTH"));
+
 
         //TODO 로그인 시 MAp 에 회원정보와 access token 가도록
         httpServletResponse.setContentType("application/json");
-        httpServletResponse.setHeader("Bearar", (String) param.get("access_token"));
+        httpServletResponse.setHeader("Bearar", (String) param.get("AUTH"));
         httpServletResponse.setCharacterEncoding("UTF-8");
 
-
+        result.put("resultCode", "0");
+        result.put("resultMsg", "로그인 성공");
 
         return result;
+    }
+
+    //아이디 찾기 서비스
+    public HashMap<String, Object> findUserByEmail(HashMap<String, Object> param){
+        logger.info("***findUserByEmail start***" + param);
+
+        HashMap<String, Object> result;
+
+        result = memberDAO.findMemberByID(param);
+
+        if(MapUtils.isEmpty(result)){
+            result.put("resultCode", "-1");
+            result.put("resultMsg", "해당 Email에 대한 ID가 존재하지 않습니다.");
+        }else {
+            result.put("resultCode", "0");
+            result.put("resultMsg", "ID 찾기 성공");
+        }
+        return result;
+
+    }
+
+    //이메일 발송 서비스
+    public HashMap<String, Object> sendMail(HashMap param) {
+        HashMap<String, Object> result = new HashMap<>();
+        //난수 생성
+        String randomNum = createCode();
+
+        MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+
+        if ("password".equals(param.get("type"))) {
+            //비밀번호 찾기 시 유저 비번 업데이트 후 메일 발송;
+        }else if (true){
+            //메일 인증 시 메일 발송만
+        }
+
+        try {
+            MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, false, "UTF-8");
+            mimeMessageHelper.setTo((String) param.get("EMAIL")); // 메일 수신자 TODO : 사용자 계정 이메일로
+            mimeMessageHelper.setSubject("asd"); // 메일 제목
+            mimeMessageHelper.setText("끌린더에서 발송한 코드는 ", true); // 메일 본문 내용, HTML 여부
+            javaMailSender.send(mimeMessage);
+
+            logger.info("메일 발송 Success");
+
+            result.put("resultCode", "0");
+            result.put("resultMsg", "메일 발송 성공");
+
+            return result;
+
+        } catch (Exception e) {
+            logger.info("메일 발송  fail");
+
+            result.put("resultCode", "-1");
+            result.put("resultMsg", "메일 발송 실패 : " + e.getMessage());
+
+            return result;
+
+        }
+    }
+
+    //메일 발송용 랜덤 숫자 생성
+    public String createCode() {
+        Random random = new Random();
+        StringBuffer key = new StringBuffer();
+
+        for (int i = 0; i < 8; i++) {
+            int index = random.nextInt(4);
+
+            switch (index) {
+                case 0: key.append((char) ((int) random.nextInt(26) + 97)); break;
+                case 1: key.append((char) ((int) random.nextInt(26) + 65)); break;
+                default: key.append(random.nextInt(9));
+            }
+        }
+        return key.toString();
     }
 }

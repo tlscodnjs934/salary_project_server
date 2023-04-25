@@ -8,7 +8,7 @@
 
     <select id="findMemberByID" resultType="HashMap" parameterType="HashMap">
         SELECT
-            ID,
+            LEFT(ID, LENGTH(ID)-3) || '***' AS ID,
             AUTH_TYPE,
             NAME,
             SALARY,
@@ -23,7 +23,41 @@
         FROM MEMBER
         WHERE 1=1
             AND ID = #{ID}
+            <if test="AUTH_TYPE != null and AUTH_TYPE != ''">
+                AND AUTH_TYPE = #{AUTH_TYPE}
+            </if>
+    </select>
+
+    <select id="findMemberByIDreturnVO" resultType="blankspace.blankspaceprj.jwt.Member" >
+        SELECT
+            ID,
+            AUTH_TYPE,
+            NAME
+        FROM MEMBER
+        WHERE 1=1
+        AND ID = #{ID}
+        <if test="AUTH_TYPE != null and AUTH_TYPE != ''">
             AND AUTH_TYPE = #{AUTH_TYPE}
+        </if>
+    </select>
+
+    <select id="findMemberByEmail" resultType="blankspace.blankspaceprj.dto.MemberVO" >
+        SELECT
+            ID,
+            AUTH_TYPE,
+            NAME,
+            SALARY,
+            NICKNAME,
+            EMAIL_AUTH_CODE,
+            WORKING_DAY_CNT,
+            PHONE,
+            EMAIL,
+            DAY,
+            AUTH_STATE,
+            RGST_DATE
+        FROM MEMBER
+        WHERE 1=1
+            AND EMAIL = #{EMAIL}
     </select>
 
     <insert id="joinMember" parameterType="HashMap">

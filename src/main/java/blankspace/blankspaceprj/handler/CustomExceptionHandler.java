@@ -18,8 +18,7 @@ public class CustomExceptionHandler {
         logger.error("handleException", ex);
         ResultDTO response = new ResultDTO();
 
-        response.setResultCode("-1");
-        response.setResultMsg(ex.getMessage());
+
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

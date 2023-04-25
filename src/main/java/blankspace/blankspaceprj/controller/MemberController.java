@@ -11,8 +11,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.view.RedirectView;
 
+import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @Api(tags = {"회원가입 API"})
@@ -24,13 +30,15 @@ public class MemberController {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @RequestMapping(value = "findAll", method = RequestMethod.POST)
+    @RequestMapping(value = "findAll", method = RequestMethod.GET)
     @ResponseBody
     @ApiOperation(value="회원 목록 전체 조회", notes="회원 목록을 전체 조회하는 API")
     public ResponseEntity<?> findAllMember() throws Exception {
         ResultDTO responseDTO = new ResultDTO();
         responseDTO.setResultCode("0");
+        responseDTO.setResultMsg("아령이 바보");
         responseDTO.setData(userService.findAll());
+        logger.info("responseDTO : " + responseDTO);
         return new ResponseEntity<>(responseDTO, HttpStatus.OK);
     }
 
@@ -39,6 +47,9 @@ public class MemberController {
     @ResponseBody
     public ResponseEntity<?> joinMember(@RequestBody HashMap<String, Object> param) throws Exception {
         ResultDTO responseDTO = new ResultDTO();
+
+
+
 
         param.put("AUTH_TYPE", "normal");
         param.put("AUTH", "normal");
@@ -55,10 +66,15 @@ public class MemberController {
 
     //카카오 로그인 페이지 호출
     @GetMapping("kakao")
-    public String hello(Model model){
-        model.addAttribute("data", "hello!!!");
-        return  "<a href=\"https://kauth.kakao.com/oauth/authorize?client_id=0a57a2699657f4e2b2e2b760f8e0dc51&redirect_uri=http://127.0.0.1:8080/api/member/receiveKakaoCode&response_type=code\" >카카오 로그인</a>";
+    public RedirectView kakao(Model model){
+        //model.addAttribute("data", "hello!!!");
+        //return  "<a href=\"https://kauth.kakao.com/oauth/authorize?client_id=0a57a2699657f4e2b2e2b760f8e0dc51&redirect_uri=http://127.0.0.1:8080/api/member/receiveKakaoCode&response_type=code\" >카카오 로그인</a>";
+        RedirectView redirectView = new RedirectView();
+        redirectView.setUrl("https://kauth.kakao.com/oauth/authorize?client_id=0a57a2699657f4e2b2e2b760f8e0dc51&redirect_uri=http://127.0.0.1:8080/api/member/receiveKakaoCode&response_type=code");
+        return redirectView;
     }
+
+
 
     //카카오 페이지 로그인 후 CODE 받아오기. 후에 인증 시 필요함
     @RequestMapping(value = "receiveKakaoCode", method = RequestMethod.GET)
@@ -75,6 +91,7 @@ public class MemberController {
 
         responseDTO.setResultCode(resultMap.get("resultCode").toString());
         responseDTO.setResultMsg(resultMap.get("resultMsg").toString());
+        responseDTO.setData(resultMap);
 
         return new ResponseEntity<>(responseDTO, HttpStatus.OK);
     }
@@ -89,7 +106,7 @@ public class MemberController {
         return new ResponseEntity<>(responseDTO, HttpStatus.OK);
     }
 
-    @ApiOperation(value="카카오 회원 가입 수행", notes="카카오 회원 가입을 수행하는 API")
+    @ApiOperation(value="일반 회원 가입 수행", notes="일반 회원 가입을 수행하는 API")
     @RequestMapping(value = "nomalLogin", method = RequestMethod.POST)
     @ResponseBody
     public ResponseEntity<?> nomalLogin(@RequestBody HashMap<String, Object> param) throws Exception {
@@ -99,4 +116,81 @@ public class MemberController {
         return new ResponseEntity<>(responseDTO, HttpStatus.OK);
     }
 
-}
+    //네이버 로그인 페이지 호출
+    @GetMapping("naver")
+    public RedirectView naverLogin(Model model){
+        String redirect_url="http://127.0.0.1:8080/api/member/receiveNaverCode";
+        String state;
+
+        try {
+            state = URLEncoder.encode(redirect_url, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+
+        RedirectView redirectView = new RedirectView();
+        redirectView.setUrl("https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=3vgi_wT2Yv2Zn_xSuig5&redirect_uri=" + redirect_url + "&state=" + state);
+        return redirectView;
+    }
+
+    //네이버 로그인 후 CODE 받아오기. 후에 인증 시 필요함
+    @RequestMapping(value = "receiveNaverCode", method = RequestMethod.GET)
+    @ResponseBody
+    public ResponseEntity<?> receiveNaverCode(@RequestParam("code") String code, @RequestParam("state") String state) throws Exception {
+        logger.info("receiveNaverCode 탐"+ code);
+
+        ResultDTO responseDTO = new ResultDTO();
+        HashMap<String, Object> resultMap;
+        HashMap<String, Object> map = new HashMap<>();
+        map.put("code", code);
+        map.put("state", state);
+        //네이버 토큰 받기 시작
+        resultMap = userService.receiveNaverToken(map);
+
+        responseDTO.setResultCode(resultMap.get("resultCode").toString());
+        responseDTO.setResultMsg(resultMap.get("resultMsg").toString());
+        responseDTO.setData(resultMap);
+
+        return new ResponseEntity<>(responseDTO, HttpStatus.OK);
+    }
+
+    //네이버 로그인 후 CODE 받아오기. 후에 인증 시 필요함
+    @RequestMapping(value = "receiveGoogleCode", method = RequestMethod.GET)
+    @ResponseBody
+    public ResponseEntity<?> receiveGoogleCode(@RequestParam HashMap param) throws Exception {
+        logger.info("receiveGoogleCode 탐"+ param);
+
+        ResultDTO responseDTO = new ResultDTO();
+        HashMap<String, Object> resultMap;
+        HashMap<String, Object> map = new HashMap<>();
+        map.put("code", param.get("token"));
+        //map.put("state", state);
+        //네이버 토큰 받기 시작
+        resultMap = userService.receiveNaverToken(map);
+
+        responseDTO.setResultCode(resultMap.get("resultCode").toString());
+        responseDTO.setResultMsg(resultMap.get("resultMsg").toString());
+        responseDTO.setData(resultMap);
+
+        return new ResponseEntity<>(responseDTO, HttpStatus.OK);
+    }
+
+    //필터 테스트
+    @RequestMapping(value = "makeToken", method = RequestMethod.GET)
+    @ResponseBody
+    public ResponseEntity<?> makeToken(@RequestBody HashMap param) throws Exception {
+        HashMap result = new HashMap();
+        result = userService.login(param);
+        return new ResponseEntity<>(result, HttpStatus.OK) ;
+    }
+
+    //아이디 찾기
+    @RequestMapping(value = "findUserByEmail", method = RequestMethod.POST)
+    @ResponseBody
+    public ResponseEntity<?> findUserByEmail(@RequestBody HashMap param) throws Exception {
+        HashMap result = new HashMap();
+        result = userService.findUserByEmail(param);
+        return new ResponseEntity<>(result, HttpStatus.OK) ;
+    }
+
+    }

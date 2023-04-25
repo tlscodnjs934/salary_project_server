@@ -2,6 +2,8 @@ package blankspace.blankspaceprj.config;
 
 import blankspace.blankspaceprj.handler.JwtAccessDeniedHandler;
 import blankspace.blankspaceprj.jwt.JwtAuthenticationFilter;
+import blankspace.blankspaceprj.jwt.JwtTokenProvider;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,12 +24,18 @@ import javax.servlet.Filter;
 //@RequiredArgsConstructor
 @Configuration
 @EnableWebSecurity
+//@RequiredArgsConstructor
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
-    private Filter JwtAuthenticationFilter = new JwtAuthenticationFilter();
+
+    //private Filter JwtAuthenticationFilter = new JwtAuthenticationFilter();
+    //private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     //private final AuthTokenProvider authTokenProvider;
     @Autowired
     JwtAccessDeniedHandler jwtAccessDeniedHandler;
+
+    @Autowired
+    JwtTokenProvider jwtTokenProvider;
 
     @Override
     public void configure(WebSecurity web) throws Exception {
@@ -36,14 +44,13 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        //JwtAuthenticationFilter jwtAuthFilter = new JwtAuthenticationFilter(authTokenProvider);
 
         http
                 .authorizeRequests()
                // .httpBasic().disable()
                 .antMatchers(HttpMethod.OPTIONS).permitAll()
                 .antMatchers("/auth/**").permitAll()
-                //.antMatchers("/api/member/**").permitAll()
+                .antMatchers("/api/member/**").permitAll()
                 .anyRequest().authenticated().and() // 해당 요청을 인증된 사용자만 사용 가능
                 .headers()
                 .frameOptions()
@@ -53,7 +60,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .sessionManagement()
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
-                .addFilterBefore(JwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling()
                 .accessDeniedHandler(jwtAccessDeniedHandler);
 

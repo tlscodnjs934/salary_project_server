@@ -1,9 +1,8 @@
 package blankspace.blankspaceprj.jwt;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jws;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -20,14 +19,16 @@ import java.util.*;
 
 import static org.springframework.util.StringUtils.split;
 
-@Service
+@Component
 public class JwtTokenProvider {
     private final long TOKEN_VALID_MILISECOND = 1000L * 60 * 60 * 10; // 10시간
 
     @Value("${jwt.secret.key}")
     private String secretKey;
 
-    private final UserDetailsService userDetailsService;
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    private final UserUserDetailsService userDetailsService;
 
     public JwtTokenProvider(//@Qualifier("UserUserDetailsService")
                             UserUserDetailsService userDetailsService) {
@@ -41,6 +42,7 @@ public class JwtTokenProvider {
 
     // Jwt 토큰 생성
     public String createToken(String userPk) {
+        logger.info("createToken secretKey : " + secretKey);
         Claims claims = Jwts.claims().setSubject(userPk);
         //claims.put("roles", roles);
         Date now = new Date();
@@ -54,12 +56,16 @@ public class JwtTokenProvider {
 
     // 인증 성공시 SecurityContextHolder에 저장할 Authentication 객체 생성
     public Authentication getAuthentication(String token) {
+        logger.info("this.getUserPk(token) token : " + secretKey);
+        logger.info("getAuthentication jwtSecretKey : " + secretKey);
+        logger.info("getAuthentication jwtSecretKey getBytes : " + token);
         UserDetails userDetails = userDetailsService.loadUserByUsername(this.getUserPk(token));
         return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
     }
 
     // Jwt Token에서 User PK 추출
     public String getUserPk(String token) {
+        logger.info("getUserPk secretKey : " + secretKey);
         return Jwts.parser().setSigningKey(secretKey)
                 .parseClaimsJws(token).getBody().getSubject();
     }
@@ -68,14 +74,22 @@ public class JwtTokenProvider {
         return req.getHeader("Bearer");
     }
 
-    // Jwt Token의 유효성 및 만료 기간 검사
-    public boolean validateToken(String jwtToken) {
+    public boolean validateToken(String token) {
         try {
-            Jws<Claims> claims = Jwts.parser().setSigningKey(secretKey).parseClaimsJws(jwtToken);
-            return !claims.getBody().getExpiration().before(new Date());
-        } catch (Exception e) {
-            return false;
+            logger.info("token : "+token);
+            logger.info("validateToken : "+secretKey);
+
+            Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(token);
+
+            return true;
+        } catch (io.jsonwebtoken.security.SecurityException | MalformedJwtException e) {
+            logger.info("잘못된 JWT 서명입니다." + e);
+        } catch (ExpiredJwtException e) {
+            logger.info("만료된 JWT 토큰입니다.");
+        } catch (IllegalArgumentException e) {
+            logger.info("JWT 토큰이 잘못되었습니다." + e);
         }
+        return false;
     }
 
 }
