@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="blankspace.blankspaceprj.dao.CalendarDAO">
+
+    <select id="selectCalendar">
+        SELECT
+            A.ID,
+            A.AUTH_TYPE,
+            A.DATE,
+            A.STATE,
+            A.CONTENT,
+            A.DAY_OFF
+        FROM CALENDAR A
+        WHERE 1=1
+            AND A.ID = #{ID}
+            AND A.AUTH_TYPE = #{AUTH_TYPE}
+            AND A.DATE = #{DATE}
+            AND A.DEL_YN = 'N'
+    </select>
+
+    <select id="selectScheduleList">
+        SELECT
+            A.ID,
+            A.AUTH_TYPE,
+            A.DATE,
+            A.SN,
+            A.TO_DO,
+            A.CHK_YN,
+            A.TIME_START,
+            A.TIME_END
+        FROM SCHEDULE A
+        WHERE 1=1
+            AND A.ID = #{ID}
+            AND A.AUTH_TYPE = #{AUTH_TYPE}
+            AND A.DATE = #{DATE}
+            AND A.DEL_YN = 'N'
+    </select>
+
+
+</mapper>

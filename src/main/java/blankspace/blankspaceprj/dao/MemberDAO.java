@@ -21,6 +21,9 @@ public interface MemberDAO {
     HashMap<String, Object> findMemberByID(HashMap<String, Object> param) ;
 
     //EMAIL로 해당 회원 찾기
+    HashMap<String, Object> findMemberByEmail(HashMap<String, Object> param) ;
+
+    //필터 체크 시 ID로 회원 조회
     Optional<Member> findMemberByIDreturnVO(HashMap<String, Object> param);
     
     //회원 등록

@@ -516,6 +516,182 @@ public class MemberServiceImpl {
 
     }
 
+    //구글 토큰으로 사용자 정보 받는 서비스
+    public HashMap<String, Object> receiveGoogleToken(HashMap<String, Object> param){
+        logger.debug("****receiveGoogleToken 구글 토큰 받기 시작****  param : " + param.get("code"));
+        HashMap receivedData = new HashMap();
+
+        logger.info("naverClientSecret :"+naverClientSecret);
+
+        String naverTokenUrl = naverRestApiTokenUrl + "?client_id=" + naverRestApiKey + "&client_secret=" + naverClientSecret + "&grant_type=authorization_code&code=" + param.get("code") + "&state=" + param.get("state");
+
+        String accessToken;
+        String refreshToken;
+        String email="";
+
+//        try {
+//            URL url = new URL(naverTokenUrl);
+//            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+//
+//            conn.setRequestMethod("POST");
+//            // setDoOutput()은 OutputStream으로 POST 데이터를 넘겨 주겠다는 옵션이다.
+//            // POST 요청을 수행하려면 setDoOutput()을 true로 설정한다.
+//            conn.setDoOutput(true);
+//
+//            int responseCode = conn.getResponseCode();
+//            System.out.println("responseCode : " + responseCode);
+//
+//            // 요청을 통해 얻은 데이터를 InputStreamReader을 통해 읽어 오기
+//            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+//            String line;
+//            StringBuilder result = new StringBuilder();
+//
+//            while ((line = bufferedReader.readLine()) != null) {
+//                result.append(line);
+//            }
+//            System.out.println("response body : " + result);
+//            logger.info("토큰 받은 response body : " + result);
+//
+//            JsonElement element = JsonParser.parseString(result.toString());
+//
+//            accessToken = element.getAsJsonObject().get("access_token").getAsString();
+//            refreshToken = element.getAsJsonObject().get("refresh_token").getAsString();
+//
+//            System.out.println("accessToken : " + accessToken);
+//            System.out.println("refreshToken : " + refreshToken);
+//
+//            receivedData.put("accessToken", accessToken);
+//            receivedData.put("refreshToken", refreshToken);
+//
+//
+//            bufferedReader.close();
+//        } catch (MalformedURLException e){
+//            e.printStackTrace();
+//            logger.info(e.getMessage());
+//            receivedData.put("resultCode", "잘못된 URL 오류");
+//            receivedData.put("resultMsg", e.getMessage());
+//
+//            return receivedData;
+//        }
+//        catch (IOException e) {
+//            e.printStackTrace();
+//            logger.info(e.getMessage());
+//            receivedData.put("resultCode", "IOException 오류");
+//            receivedData.put("resultMsg", e.getMessage());
+//
+//            return receivedData;
+//        }
+//        catch (Exception e) {
+//            e.printStackTrace();
+//            logger.info(e.getMessage());
+//            receivedData.put("resultCode", "Exception 오류");
+//            receivedData.put("resultMsg", e.getMessage());
+//
+//            return receivedData;
+//        }
+
+        //받은 토큰으로 구글 사용자 정보 조회 호출
+        String googleUserInfoUrl= "https://oauth2.googleapis.com/tokeninfo";
+
+        try {
+            URL url = new URL(googleUserInfoUrl);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
+            conn.setRequestMethod("POST");
+            // setDoOutput()은 OutputStream으로 POST 데이터를 넘겨 주겠다는 옵션이다.
+            // POST 요청을 수행하려면 setDoOutput()을 true로 설정한다.
+            conn.setDoOutput(true);
+            conn.setRequestProperty("id_token", (String) param.get("token"));
+
+            int responseCode = conn.getResponseCode();
+            System.out.println("responseCode : " + responseCode);
+
+            // 요청을 통해 얻은 데이터를 InputStreamReader을 통해 읽어 오기
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            String line;
+            StringBuilder result = new StringBuilder();
+
+            while ((line = bufferedReader.readLine()) != null) {
+                result.append(line);
+            }
+            System.out.println("response body : " + result);
+            logger.info("네이버 사용자 정보 받은 response body : " + result);
+
+            JsonElement element = JsonParser.parseString(result.toString());
+            JsonElement response = element.getAsJsonObject().get("response");
+
+            //logger.info("kakao_account"+ (String) kakao_account.getAsString());
+            //logger.info("kakao_account2"+kakao_account.getAsJsonObject().get("email").getAsString());
+            //element = element.getAsJsonObject().get("nickname");
+
+            if(null != response.getAsJsonObject().get("email")) {
+                email = response.getAsJsonObject().get("email").getAsString();
+                logger.info("email :" + email);
+            }
+
+            receivedData.put("email", email);
+
+            bufferedReader.close();
+        } catch (MalformedURLException e){
+            e.printStackTrace();
+            receivedData.put("resultCode", "잘못된 URL 오류");
+            receivedData.put("resultMsg", e.getMessage());
+
+            return receivedData;
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+            receivedData.put("resultCode", "IOException 오류");
+            receivedData.put("resultMsg", e.getMessage());
+
+            return receivedData;
+        }
+        catch (Exception e){
+            e.printStackTrace();
+            receivedData.put("resultCode", "Exception 오류");
+            receivedData.put("resultMsg", e.getMessage());
+
+            return receivedData;
+        }
+
+        logger.info("receivedData ++ " + receivedData);
+
+        //회원 조회하여 존재 않을 시 회원가입 등록 진행
+        receivedData.put("AUTH_TYPE", "google");
+        receivedData.put("ID", receivedData.get("email"));
+
+        HashMap<String, Object> member;
+        member = memberDAO.findMemberByID(receivedData);
+
+        logger.info("member + " + member);
+
+        //회원 데이터 없을 경우 회원 등록
+        if(MapUtils.isEmpty(member)){
+            logger.info("구글 회원가입 진행 : " + receivedData);
+            //회원가입 진행
+            receivedData.put("ID", receivedData.get("email"));
+            receivedData.put("AUTH", receivedData.get("token"));
+
+            member = joinMember(receivedData);
+
+            receivedData.put("resultCode", "0");
+            receivedData.put("resultMsg", "구글 회원가입 성공");
+        }else{
+            logger.info("구글 기존 회원, 회원가입 미진행 : " + receivedData);
+
+            receivedData.put("resultCode", "0");
+            receivedData.put("resultMsg", "구글 기존 회원, 회원가입 미진행");
+
+            login(receivedData);
+        }
+
+
+
+        return receivedData;
+
+
+    }
+
     public HashMap login(HashMap param){
         logger.debug("*********login 로그인 시작****************" + param);
         HashMap result = new HashMap();
@@ -563,13 +739,13 @@ public class MemberServiceImpl {
         return result;
     }
 
-    //아이디 찾기 서비스
+    //EMAIL 입력을 통해 잃어버린 아이디 찾기 서비스
     public HashMap<String, Object> findUserByEmail(HashMap<String, Object> param){
         logger.info("***findUserByEmail start***" + param);
 
         HashMap<String, Object> result;
 
-        result = memberDAO.findMemberByID(param);
+        result = memberDAO.findMemberByEmail(param);
 
         if(MapUtils.isEmpty(result)){
             result.put("resultCode", "-1");
@@ -577,6 +753,60 @@ public class MemberServiceImpl {
         }else {
             result.put("resultCode", "0");
             result.put("resultMsg", "ID 찾기 성공");
+        }
+        return result;
+
+    }
+
+    //ID로 회원 조회
+    public HashMap<String, Object> findMemberByIDForJoin(HashMap<String, Object> param){
+        logger.info("***findMemberByID start***" + param);
+
+        HashMap<String, Object> result = new HashMap<>();
+        
+        if(!MapUtils.containsKey(param, "ID")){
+            logger.info("ID가 입력되지 않았습니다. param : " + param);
+            result.put("resultCode", "-1");
+            result.put("resultMsg", "ID가 입력되지 않았습니다.");
+
+            return result;
+        }
+
+        result = memberDAO.findMemberByID(param);
+
+        if(MapUtils.isEmpty(result)){
+            result.put("resultCode", "0");
+            result.put("resultMsg", "해당 ID로 회원가입이 가능합니다.");
+        }else {
+            result.put("resultCode", "-1");
+            result.put("resultMsg", "해당 ID 는 이미 존재하여 가입할 수 없습니다.");
+        }
+        return result;
+
+    }
+
+    //EMAIL로 회원 조회
+    public HashMap<String, Object> findMemberByEmailForJoin(HashMap<String, Object> param){
+        logger.info("***findMemberByEmail start***" + param);
+
+        HashMap<String, Object> result = new HashMap<>();
+
+        if(!MapUtils.containsKey(param, "EMAIL")){
+            logger.info("EMAIL이 입력되지 않았습니다. param : " + param);
+            result.put("resultCode", "-1");
+            result.put("resultMsg", "EMAIL이 입력되지 않았습니다.");
+
+            return result;
+        }
+
+        result = memberDAO.findMemberByEmail(param);
+
+        if(MapUtils.isEmpty(result)){
+            result.put("resultCode", "0");
+            result.put("resultMsg", "해당 EMAIL로 회원가입이 가능합니다.");
+        }else {
+            result.put("resultCode", "-1");
+            result.put("resultMsg", "해당 EMAIL은 이미 존재하여 가입할 수 없습니다.");
         }
         return result;
 

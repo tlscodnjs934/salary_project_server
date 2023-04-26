@@ -3,6 +3,8 @@ package blankspace.blankspaceprj.controller;
 import blankspace.blankspaceprj.dto.ResultDTO;
 import blankspace.blankspaceprj.service.MemberServiceImpl;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,15 +15,17 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.view.RedirectView;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@Api(tags = {"회원가입 API"})
+@Api(tags = {"회원 관련 API"})
 @RequestMapping(value = "/api/member/")
 public class MemberController {
 
@@ -69,9 +73,11 @@ public class MemberController {
     public RedirectView kakao(Model model){
         //model.addAttribute("data", "hello!!!");
         //return  "<a href=\"https://kauth.kakao.com/oauth/authorize?client_id=0a57a2699657f4e2b2e2b760f8e0dc51&redirect_uri=http://127.0.0.1:8080/api/member/receiveKakaoCode&response_type=code\" >카카오 로그인</a>";
+
         RedirectView redirectView = new RedirectView();
-        redirectView.setUrl("https://kauth.kakao.com/oauth/authorize?client_id=0a57a2699657f4e2b2e2b760f8e0dc51&redirect_uri=http://127.0.0.1:8080/api/member/receiveKakaoCode&response_type=code");
+        redirectView.setUrl("https://kauth.kakao.com/oauth/authorize?client_id=0a57a2699657f4e2b2e2b760f8e0dc51&redirect_uri=http://localhost:8080/api/member/receiveKakaoCode&response_type=code");
         return redirectView;
+
     }
 
 
@@ -157,7 +163,7 @@ public class MemberController {
     //네이버 로그인 후 CODE 받아오기. 후에 인증 시 필요함
     @RequestMapping(value = "receiveGoogleCode", method = RequestMethod.GET)
     @ResponseBody
-    public ResponseEntity<?> receiveGoogleCode(@RequestParam HashMap param) throws Exception {
+    public ResponseEntity<?> receiveGoogleCode(@RequestBody HashMap<String, Object> param) throws Exception {
         logger.info("receiveGoogleCode 탐"+ param);
 
         ResultDTO responseDTO = new ResultDTO();
@@ -184,12 +190,36 @@ public class MemberController {
         return new ResponseEntity<>(result, HttpStatus.OK) ;
     }
 
-    //아이디 찾기
+    //아이디 까먹었을때 EMAIL로 회원 조회
+    @ApiOperation(value="아이디 찾기", notes="아이디 까먹었을때 EMAIL로 회원 조회하는 API")
+    @ApiImplicitParams({@ApiImplicitParam(name="EMAIL", value = "유저 이메일", required = true)})
     @RequestMapping(value = "findUserByEmail", method = RequestMethod.POST)
     @ResponseBody
     public ResponseEntity<?> findUserByEmail(@RequestBody HashMap param) throws Exception {
         HashMap result = new HashMap();
         result = userService.findUserByEmail(param);
+        return new ResponseEntity<>(result, HttpStatus.OK) ;
+    }
+
+    //회원가입 시 아이디 중복체크
+    @ApiOperation(value="회원가입 시 아이디 중복체크", notes="회원가입 시 아이디 중복체크 조회하는 API")
+    @ApiImplicitParams({@ApiImplicitParam(name="ID", value = "유저 아이디", required = true)})
+    @RequestMapping(value = "CheckDuplicateUserByID", method = RequestMethod.POST)
+    @ResponseBody
+    public ResponseEntity<?> CheckDuplicateUserByID(@RequestBody HashMap param) throws Exception {
+        HashMap result = new HashMap();
+        result = userService.findMemberByIDForJoin(param);
+        return new ResponseEntity<>(result, HttpStatus.OK) ;
+    }
+
+    //회원가입 시 이메일 중복체크
+    @ApiOperation(value="회원가입 시 이메일 중복체크", notes="회원가입 시 이메일 중복체크 조회하는 API")
+    @ApiImplicitParams({@ApiImplicitParam(name="EMAIL", value = "유저 이메일", required = true)})
+    @RequestMapping(value = "CheckDuplicateUserByEmail", method = RequestMethod.POST)
+    @ResponseBody
+    public ResponseEntity<?> CheckDuplicateUserByEmail(@RequestBody HashMap param) throws Exception {
+        HashMap result = new HashMap();
+        result = userService.findMemberByEmailForJoin(param);
         return new ResponseEntity<>(result, HttpStatus.OK) ;
     }
 
