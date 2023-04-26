@@ -196,8 +196,13 @@ public class MemberController {
     @RequestMapping(value = "findUserByEmail", method = RequestMethod.POST)
     @ResponseBody
     public ResponseEntity<?> findUserByEmail(@RequestBody HashMap param) throws Exception {
+        ResultDTO resultDTO = new ResultDTO();
         HashMap result = new HashMap();
         result = userService.findUserByEmail(param);
+
+        resultDTO.setResultCode(result.get("resultCode").toString());
+        resultDTO.setResultMsg(result.get("resultMsg").toString());
+        resultDTO.setData(result);
         return new ResponseEntity<>(result, HttpStatus.OK) ;
     }
 
@@ -207,8 +212,14 @@ public class MemberController {
     @RequestMapping(value = "CheckDuplicateUserByID", method = RequestMethod.POST)
     @ResponseBody
     public ResponseEntity<?> CheckDuplicateUserByID(@RequestBody HashMap param) throws Exception {
+        ResultDTO resultDTO = new ResultDTO();
         HashMap result = new HashMap();
         result = userService.findMemberByIDForJoin(param);
+
+        resultDTO.setResultCode(result.get("resultCode").toString());
+        resultDTO.setResultMsg(result.get("resultMsg").toString());
+        resultDTO.setData(result);
+
         return new ResponseEntity<>(result, HttpStatus.OK) ;
     }
 
@@ -218,9 +229,31 @@ public class MemberController {
     @RequestMapping(value = "CheckDuplicateUserByEmail", method = RequestMethod.POST)
     @ResponseBody
     public ResponseEntity<?> CheckDuplicateUserByEmail(@RequestBody HashMap param) throws Exception {
+        ResultDTO resultDTO = new ResultDTO();
         HashMap result = new HashMap();
         result = userService.findMemberByEmailForJoin(param);
+
+        resultDTO.setResultCode(result.get("resultCode").toString());
+        resultDTO.setResultMsg(result.get("resultMsg").toString());
+
         return new ResponseEntity<>(result, HttpStatus.OK) ;
+    }
+
+    //회원정보 수정
+    @ApiOperation(value="회원가입 시 이메일 중복체크", notes="회원가입 시 이메일 중복체크 조회하는 API")
+    @ApiImplicitParams({@ApiImplicitParam(name="ID", value = "유저 아이디", required = true),
+            @ApiImplicitParam(name="AUTH_TYPE", value = "유저 타입", required = true)})
+    @RequestMapping(value = "updateMemberInfo", method = RequestMethod.POST)
+    @ResponseBody
+    public ResponseEntity<?> updateMemberInfo(@RequestBody HashMap param) throws Exception {
+        ResultDTO resultDTO = new ResultDTO();
+        HashMap result = new HashMap();
+        result = userService.updateMemberInfo(param);
+
+        resultDTO.setResultCode(result.get("resultCode").toString());
+        resultDTO.setResultMsg(result.get("resultMsg").toString());
+
+        return new ResponseEntity<>(resultDTO, HttpStatus.OK) ;
     }
 
     }

@@ -28,4 +28,7 @@ public interface MemberDAO {
     
     //회원 등록
     int joinMember(HashMap<String, Object> param);
+
+    //회원 정보 수정
+    int updateMember(HashMap<String, Object> param);
 }

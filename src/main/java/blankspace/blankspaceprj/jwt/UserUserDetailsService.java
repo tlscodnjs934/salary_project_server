@@ -32,7 +32,7 @@ public class UserUserDetailsService implements UserDetailsService {
         logger.info("loadUserByUsername : " + id);
         HashMap param = new HashMap();
         param.put("ID", id);
-        logger.info("loadUserByUsername memberDAO.findMemberByEmail(id) : " + memberDAO.findMemberByIDreturnVO(param));
+        logger.info("loadUserByUsername memberDAO.findMemberByIDreturnVO(id) : " + memberDAO.findMemberByIDreturnVO(param));
         try {
             return (UserDetails) memberDAO.findMemberByIDreturnVO(param)
                     .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));

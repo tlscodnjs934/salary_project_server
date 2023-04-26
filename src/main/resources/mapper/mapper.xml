@@ -8,7 +8,7 @@
 
     <select id="findMemberByID" resultType="HashMap" parameterType="HashMap">
         SELECT
-            LEFT(ID, LENGTH(ID)-3) || '***' AS ID,
+            ID,
             AUTH_TYPE,
             NAME,
             SALARY,
@@ -41,7 +41,7 @@
         </if>
     </select>
 
-    <select id="findMemberByEmail" resultType="blankspace.blankspaceprj.dto.MemberVO" >
+    <select id="findMemberByEmail" resultType="HashMap" >
         SELECT
             ID,
             AUTH_TYPE,
@@ -95,6 +95,32 @@
             UPDATE AUTH = #{AUTH}
     </insert>
 
+    <update id="updateMember" parameterType="HashMap">
+        UPDATE MEMBER
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="PASSWORD != null and  PASSWORD != ''">PASSWORD = #{PASSWORD},</if>
+            <if test="WORKING_DAY_CNT != null and  WORKING_DAY_CNT != ''">WORKING_DAY_CNT = #{WORKING_DAY_CNT},</if>
+            <if test="PHONE != null and  PHONE != ''">PHONE = #{PHONE},</if>
+            <if test="DAY != null and  DAY != ''">DAY = #{DAY},</if>
+            <if test="SALARY != null and  SALARY != ''">SALARY = #{SALARY},</if>
+            <if test="NAME != null and  NAME != ''">NAME = #{NAME},</if>
+            <if test="NICKNAME != null and  NICKNAME != ''">NICKNAME = #{NICKNAME},</if>
+            <if test="EMAIL_MODIFY != null and  EMAIL_MODIFY != ''">
+                EMAIL_MODIFY_DATE = #{EMAIL_MODIFY_DATE},
+                EMAIL = #{EMAIL},
+                AUTH_STATE = #{AUTH_STATE},
+                EMAIL_AUTH_CODE = #{EMAIL_AUTH_CODE}
+            </if>
+            <if test="WITHDRAWAL != null and  WITHDRAWAL != ''">
+                WITHDRAWAL_DATE = #{WITHDRAWAL_DATE},
+                DEL_YN = 'Y'
+            </if>
+        </trim>
+        WHERE 1=1
+            AND ID = #{ID}
+            AND AUTH_TYPE = #{AUTH_TYPE}
+            AND DEL_YN = 'N'
+    </update>
 
 
 </mapper>

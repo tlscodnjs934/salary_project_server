@@ -32,6 +32,8 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 @Service
@@ -743,7 +745,15 @@ public class MemberServiceImpl {
     public HashMap<String, Object> findUserByEmail(HashMap<String, Object> param){
         logger.info("***findUserByEmail start***" + param);
 
-        HashMap<String, Object> result;
+        HashMap<String, Object> result = new HashMap<>();
+
+        if(!MapUtils.containsKey(param, "EMAIL")){
+            logger.info("ID가 입력되지 않았습니다. param : " + param);
+            result.put("resultCode", "-1");
+            result.put("resultMsg", "ID가 입력되지 않았습니다.");
+
+            return result;
+        }
 
         result = memberDAO.findMemberByEmail(param);
 
@@ -810,6 +820,52 @@ public class MemberServiceImpl {
         }
         return result;
 
+    }
+
+    //회원정보 수정
+    public HashMap<String, Object> updateMemberInfo(HashMap<String, Object> param) {
+        logger.info("***********updateMemberInfo start ************ param : " + param);
+        HashMap<String, Object> result = new HashMap<>();
+
+        if(!MapUtils.containsKey(param, "ID")){
+            logger.info("ID가 입력되지 않았습니다. param : " + param);
+            result.put("resultCode", "-1");
+            result.put("resultMsg", "ID가 입력되지 않았습니다.");
+
+            return result;
+        }
+
+        if(!MapUtils.containsKey(param, "AUTH_TYPE")){
+            logger.info("AUTH_TYPE이 입력되지 않았습니다. param : " + param);
+            result.put("resultCode", "-1");
+            result.put("resultMsg", "AUTH_TYPE이 입력되지 않았습니다.");
+
+            return result;
+        }
+
+        int cnt = memberDAO.updateMember(param);
+
+        if(cnt == 1){
+            result.put("resultCode", "0");
+            result.put("resultMsg", "회원정보 업데이트 성공");
+        }else{
+            result.put("resultCode", "-1");
+            result.put("resultMsg", "회원정보 업데이트 실패");
+        }
+
+        return result;
+    }
+
+    //이메일 형식 검증
+    public static boolean isValidEmail(String email) {
+        boolean err = false;
+        String regex = "^[_a-z0-9-]+(.[_a-z0-9-]+)*@(?:\\w+\\.)+\\w+$";
+        Pattern p = Pattern.compile(regex);
+        Matcher m = p.matcher(email);
+        if(m.matches()) {
+            err = true;
+        }
+        return err;
     }
 
     //이메일 발송 서비스
