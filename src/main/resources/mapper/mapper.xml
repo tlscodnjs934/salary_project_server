@@ -41,7 +41,7 @@
         </if>
     </select>
 
-    <select id="findMemberByEmail" resultType="HashMap" >
+    <select id="findMemberByEmail" resultType="HashMap" parameterType="HashMap">
         SELECT
             ID,
             AUTH_TYPE,
@@ -105,14 +105,14 @@
             <if test="SALARY != null and  SALARY != ''">SALARY = #{SALARY},</if>
             <if test="NAME != null and  NAME != ''">NAME = #{NAME},</if>
             <if test="NICKNAME != null and  NICKNAME != ''">NICKNAME = #{NICKNAME},</if>
-            <if test="EMAIL_MODIFY != null and  EMAIL_MODIFY != ''">
-                EMAIL_MODIFY_DATE = #{EMAIL_MODIFY_DATE},
+            <if test="EMAIL_MODIFY != null and  EMAIL_MODIFY == 'Y'.toString() ">
+                EMAIL_MODIFY_DATE = NOW(),
                 EMAIL = #{EMAIL},
-                AUTH_STATE = #{AUTH_STATE},
+                AUTH_STATE = 'N',
                 EMAIL_AUTH_CODE = #{EMAIL_AUTH_CODE}
             </if>
-            <if test="WITHDRAWAL != null and  WITHDRAWAL != ''">
-                WITHDRAWAL_DATE = #{WITHDRAWAL_DATE},
+            <if test='WITHDRAWAL != null and  WITHDRAWAL = "Y"'>
+                WITHDRAWAL_DATE = NOW(),
                 DEL_YN = 'Y'
             </if>
         </trim>

@@ -105,6 +105,15 @@ public class MemberServiceImpl {
             return param;
         }
 
+        if(MapUtils.containsKey(param, "EMAIL")){
+            if(!isValidEmail((String) param.get("EMAIL"))){
+                param.put("resultCode", "-1");
+                param.put("resultMsg", "이메일 형식이 올바르지 않습니다.");
+                return param;
+            }
+        }
+
+
         //TODO 앱에서 접근일 경우 앱용 secret key 확인 후 회원가입 필요
         String userAgent = httpServletRequest.getHeader("User-Agent").toUpperCase();
 
@@ -322,6 +331,7 @@ public class MemberServiceImpl {
             logger.info("카카오 회원가입 진행 : " + receivedData);
             //회원가입 진행
             receivedData.put("ID", receivedData.get("email"));
+            receivedData.put("EMAIL", receivedData.get("email"));
             receivedData.put("AUTH", refreshToken);
 
             member = joinMember(receivedData);
@@ -496,6 +506,7 @@ public class MemberServiceImpl {
             logger.info("네이버 회원가입 진행 : " + receivedData);
             //회원가입 진행
             receivedData.put("ID", receivedData.get("email"));
+            receivedData.put("EMAIL", receivedData.get("email"));
             receivedData.put("AUTH", refreshToken);
 
             member = joinMember(receivedData);
@@ -744,20 +755,19 @@ public class MemberServiceImpl {
     //EMAIL 입력을 통해 잃어버린 아이디 찾기 서비스
     public HashMap<String, Object> findUserByEmail(HashMap<String, Object> param){
         logger.info("***findUserByEmail start***" + param);
-
-        HashMap<String, Object> result = new HashMap<>();
+        HashMap<String, Object> result = new HashMap<String, Object>();
 
         if(!MapUtils.containsKey(param, "EMAIL")){
-            logger.info("ID가 입력되지 않았습니다. param : " + param);
+            logger.info("EMAIL이 입력되지 않았습니다. param : " + param);
             result.put("resultCode", "-1");
             result.put("resultMsg", "ID가 입력되지 않았습니다.");
 
             return result;
         }
 
-        result = memberDAO.findMemberByEmail(param);
+        HashMap<String, Object> hashMap = memberDAO.findMemberByEmail(param);
 
-        if(MapUtils.isEmpty(result)){
+        if(MapUtils.isEmpty(hashMap)){
             result.put("resultCode", "-1");
             result.put("resultMsg", "해당 Email에 대한 ID가 존재하지 않습니다.");
         }else {
@@ -782,9 +792,9 @@ public class MemberServiceImpl {
             return result;
         }
 
-        result = memberDAO.findMemberByID(param);
+        HashMap<String, Object> hashMap = memberDAO.findMemberByID(param);
 
-        if(MapUtils.isEmpty(result)){
+        if(MapUtils.isEmpty(hashMap)){
             result.put("resultCode", "0");
             result.put("resultMsg", "해당 ID로 회원가입이 가능합니다.");
         }else {
@@ -809,9 +819,9 @@ public class MemberServiceImpl {
             return result;
         }
 
-        result = memberDAO.findMemberByEmail(param);
+        HashMap<String, Object> hashMap = memberDAO.findMemberByEmail(param);
 
-        if(MapUtils.isEmpty(result)){
+        if(MapUtils.isEmpty(hashMap)){
             result.put("resultCode", "0");
             result.put("resultMsg", "해당 EMAIL로 회원가입이 가능합니다.");
         }else {
@@ -841,6 +851,15 @@ public class MemberServiceImpl {
             result.put("resultMsg", "AUTH_TYPE이 입력되지 않았습니다.");
 
             return result;
+        }
+
+        if(MapUtils.containsKey(param, "EMAIL_MODIFY")){
+            //TODO : 메일 발송 후 코드 저장
+            if(!isValidEmail((String) param.get("EMAIL"))){
+                param.put("resultCode", "-1");
+                param.put("resultMsg", "이메일 형식이 올바르지 않습니다.");
+                return param;
+            }
         }
 
         int cnt = memberDAO.updateMember(param);

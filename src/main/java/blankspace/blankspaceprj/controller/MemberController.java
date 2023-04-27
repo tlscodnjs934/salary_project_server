@@ -192,7 +192,7 @@ public class MemberController {
 
     //아이디 까먹었을때 EMAIL로 회원 조회
     @ApiOperation(value="아이디 찾기", notes="아이디 까먹었을때 EMAIL로 회원 조회하는 API")
-    @ApiImplicitParams({@ApiImplicitParam(name="EMAIL", value = "유저 이메일", required = true)})
+    @ApiImplicitParams({@ApiImplicitParam(name="EMAIL", value = "유저 이메일", required = true, dataType = "String")})
     @RequestMapping(value = "findUserByEmail", method = RequestMethod.POST)
     @ResponseBody
     public ResponseEntity<?> findUserByEmail(@RequestBody HashMap param) throws Exception {
@@ -208,7 +208,7 @@ public class MemberController {
 
     //회원가입 시 아이디 중복체크
     @ApiOperation(value="회원가입 시 아이디 중복체크", notes="회원가입 시 아이디 중복체크 조회하는 API")
-    @ApiImplicitParams({@ApiImplicitParam(name="ID", value = "유저 아이디", required = true)})
+    @ApiImplicitParams({@ApiImplicitParam(name="ID", value = "유저 아이디", required = true, dataType = "String")})
     @RequestMapping(value = "CheckDuplicateUserByID", method = RequestMethod.POST)
     @ResponseBody
     public ResponseEntity<?> CheckDuplicateUserByID(@RequestBody HashMap param) throws Exception {
@@ -225,7 +225,7 @@ public class MemberController {
 
     //회원가입 시 이메일 중복체크
     @ApiOperation(value="회원가입 시 이메일 중복체크", notes="회원가입 시 이메일 중복체크 조회하는 API")
-    @ApiImplicitParams({@ApiImplicitParam(name="EMAIL", value = "유저 이메일", required = true)})
+    @ApiImplicitParams({@ApiImplicitParam(name="EMAIL", value = "유저 이메일", required = true, dataType = "String")})
     @RequestMapping(value = "CheckDuplicateUserByEmail", method = RequestMethod.POST)
     @ResponseBody
     public ResponseEntity<?> CheckDuplicateUserByEmail(@RequestBody HashMap param) throws Exception {
@@ -241,8 +241,8 @@ public class MemberController {
 
     //회원정보 수정
     @ApiOperation(value="회원가입 시 이메일 중복체크", notes="회원가입 시 이메일 중복체크 조회하는 API")
-    @ApiImplicitParams({@ApiImplicitParam(name="ID", value = "유저 아이디", required = true),
-            @ApiImplicitParam(name="AUTH_TYPE", value = "유저 타입", required = true)})
+    @ApiImplicitParams({@ApiImplicitParam(name="ID", value = "유저 아이디", required = true, dataType = "String"),
+            @ApiImplicitParam(name="AUTH_TYPE", value = "유저 타입", required = true, dataType = "String")})
     @RequestMapping(value = "updateMemberInfo", method = RequestMethod.POST)
     @ResponseBody
     public ResponseEntity<?> updateMemberInfo(@RequestBody HashMap param) throws Exception {
