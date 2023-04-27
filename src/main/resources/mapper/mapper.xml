@@ -111,7 +111,14 @@
                 AUTH_STATE = 'N',
                 EMAIL_AUTH_CODE = #{EMAIL_AUTH_CODE}
             </if>
-            <if test='WITHDRAWAL != null and  WITHDRAWAL = "Y"'>
+            <if test="PASSWORD_FORGOT != null and  PASSWORD_FORGOT == 'Y'.toString() ">
+                EMAIL_AUTH_CODE = #{EMAIL_AUTH_CODE},
+                PASSWORD = #{PASSWORD}
+            </if>
+            <if test="PASSWORD != null and  PASSWORD != '' ">
+                PASSWORD = #{PASSWORD}
+            </if>
+            <if test='WITHDRAWAL != null and  WITHDRAWAL == "Y"'>
                 WITHDRAWAL_DATE = NOW(),
                 DEL_YN = 'Y'
             </if>

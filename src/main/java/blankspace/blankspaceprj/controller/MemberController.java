@@ -256,4 +256,23 @@ public class MemberController {
         return new ResponseEntity<>(resultDTO, HttpStatus.OK) ;
     }
 
+    //비밀번호 찾기
+    @ApiOperation(value="일반 회원 비밀번호 찾기", notes="비밀번호 찾기 API (난수로 비밀번호 업데이트 후 메일 발송)")
+    @ApiImplicitParams({@ApiImplicitParam(name="ID", value = "유저 아이디", required = true, dataType = "String"),
+            @ApiImplicitParam(name="AUTH_TYPE", value = "유저 타입", required = true, dataType = "String")})
+    @RequestMapping(value = "findNormalMemberPassword", method = RequestMethod.POST)
+    @ResponseBody
+    public ResponseEntity<?> findNormalMemberPassword(@RequestBody HashMap param) throws Exception {
+        ResultDTO resultDTO = new ResultDTO();
+        HashMap result = new HashMap();
+
+        param.put("PASSWORD_MODIFY", "Y");
+        result = userService.sendMail(param);
+
+        resultDTO.setResultCode(result.get("resultCode").toString());
+        resultDTO.setResultMsg(result.get("resultMsg").toString());
+
+        return new ResponseEntity<>(resultDTO, HttpStatus.OK) ;
+    }
+
     }

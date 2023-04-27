@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Base64Utils;
 import org.thymeleaf.util.MapUtils;
 
+import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -54,6 +55,9 @@ public class MemberServiceImpl {
     @Autowired
     JwtTokenProvider jwtTokenProvider;
 
+    @Autowired
+    MailService mailService;
+
     @Value("${kakao.rest.api.token.url}")
     String kakaoRestApiTokenUrl;
 
@@ -80,8 +84,6 @@ public class MemberServiceImpl {
 
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private JavaMailSender javaMailSender ;
-
 
 
     public ArrayList<HashMap<String, Object>> findAll(){
@@ -853,13 +855,9 @@ public class MemberServiceImpl {
             return result;
         }
 
-        if(MapUtils.containsKey(param, "EMAIL_MODIFY")){
-            //TODO : 메일 발송 후 코드 저장
-            if(!isValidEmail((String) param.get("EMAIL"))){
-                param.put("resultCode", "-1");
-                param.put("resultMsg", "이메일 형식이 올바르지 않습니다.");
-                return param;
-            }
+        if(MapUtils.containsKey(param, "PASSWORD")){
+            BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
+            param.put("PASSWORD", bCryptPasswordEncoder.encode((String) param.get("PASSWORD")));
         }
 
         int cnt = memberDAO.updateMember(param);
@@ -888,42 +886,81 @@ public class MemberServiceImpl {
     }
 
     //이메일 발송 서비스
-    public HashMap<String, Object> sendMail(HashMap param) {
+    public HashMap<String, Object> sendMail(HashMap<String, Object> param) {
         HashMap<String, Object> result = new HashMap<>();
+        HashMap<String, Object> updateMemberMap = new HashMap<>();
         //난수 생성
         String randomNum = createCode();
 
-        MimeMessage mimeMessage = javaMailSender.createMimeMessage();
 
-        if ("password".equals(param.get("type"))) {
+        if(!MapUtils.containsKey(param, "EMAIL")){
+            logger.info("EMAIL이 입력되지 않았습니다. param : " + param);
+            result.put("resultCode", "-1");
+            result.put("resultMsg", "EMAIL이 입력되지 않았습니다.");
+
+            return result;
+        }
+
+        //비밀번호 찾기
+        if ("Y".equals(param.get("PASSWORD_FORGOT"))) {
+
             //비밀번호 찾기 시 유저 비번 업데이트 후 메일 발송;
-        }else if (true){
-            //메일 인증 시 메일 발송만
+            HashMap<String, Object> member = memberDAO.findMemberByID(param);
+
+            //TODO 회원 조회해서 등록된 이메일로 발송 필요
+            updateMemberMap.put("EMAIL_AUTH_CODE", randomNum);
+            
+            //암호화된 난수 비밀번호 세팅
+            BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
+            updateMemberMap.put("PASSWORD", bCryptPasswordEncoder.encode(randomNum));
+            
+            //회원 업데이트 호출
+            memberDAO.updateMember(updateMemberMap);
+        }else if ("Y".equals(param.get("EMAIL_MODIFY"))){
+
+            //메일 인증 시
+            updateMemberMap.put("EMAIL", param.get("EMAIL"));
+            updateMemberMap.put("EMAIL_AUTH_CODE", randomNum);
+
+            //회원 업데이트 호출
+            memberDAO.updateMember(updateMemberMap);
+
         }
 
         try {
-            MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, false, "UTF-8");
-            mimeMessageHelper.setTo((String) param.get("EMAIL")); // 메일 수신자 TODO : 사용자 계정 이메일로
-            mimeMessageHelper.setSubject("asd"); // 메일 제목
-            mimeMessageHelper.setText("끌린더에서 발송한 코드는 ", true); // 메일 본문 내용, HTML 여부
-            javaMailSender.send(mimeMessage);
-
-            logger.info("메일 발송 Success");
-
-            result.put("resultCode", "0");
-            result.put("resultMsg", "메일 발송 성공");
-
-            return result;
-
-        } catch (Exception e) {
-            logger.info("메일 발송  fail");
-
-            result.put("resultCode", "-1");
-            result.put("resultMsg", "메일 발송 실패 : " + e.getMessage());
-
-            return result;
-
+            mailService.mailSend(updateMemberMap);
+        } catch (MessagingException e) {
+            e.printStackTrace();
+            logger.error("MessagingException 에러" + e);
+            throw new RuntimeException(e);
         }
+//        try {
+//            MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, false, "UTF-8");
+//            mimeMessageHelper.setTo((String) param.get("EMAIL")); // 메일 수신자 TODO : 사용자 계정 이메일로
+//            mimeMessageHelper.setSubject("끌린더에서 발송한 코드입니다."); // 메일 제목
+//            mimeMessageHelper.setText("끌린더에서 발송한 코드는 " + randomNum + "입니다.", true); // 메일 본문 내용, HTML 여부
+//            javaMailSender.send(mimeMessage);
+//
+//            logger.info("메일 발송 Success");
+//
+//            result.put("resultCode", "0");
+//            result.put("resultMsg", "메일 발송 성공");
+//
+//            return result;
+//
+//        } catch (Exception e) {
+//            logger.info("메일 발송  fail");
+//
+//            result.put("resultCode", "-1");
+//            result.put("resultMsg", "메일 발송 실패 : " + e.getMessage());
+//
+//            return result;
+//
+//        }
+        result.put("resultCode", "0");
+        result.put("resultMsg", "MemberServiceImpl sendMail 메일 발송 완료");
+        
+        return result;
     }
 
     //메일 발송용 랜덤 숫자 생성
