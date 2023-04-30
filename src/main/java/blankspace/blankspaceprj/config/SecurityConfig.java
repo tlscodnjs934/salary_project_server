@@ -48,6 +48,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         http
                 .authorizeRequests()
                // .httpBasic().disable()
+                .mvcMatchers(HttpMethod.OPTIONS, "/**").permitAll()  //스프링 시큐리티로 인한 CORS 오류 해결...
                 .antMatchers(HttpMethod.OPTIONS).permitAll()
                 .antMatchers("/auth/**").permitAll()
                 .antMatchers("/api/member/**").permitAll()

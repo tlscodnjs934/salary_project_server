@@ -87,4 +87,63 @@ public class CalendarServiceImpl {
 
         return result;
     }
+
+    //회원별 일별 스케줄 리스트 Merge
+    public HashMap<String, Object> mergeScheduleList(ArrayList<HashMap<String, Object>> paramList){
+        logger.info("*******mergeScheduleList 등록 param : " + paramList);
+        HashMap result = new HashMap();
+        HashMap eachMap = new HashMap();
+
+        int totalCnt = 0;
+
+        for(int i = 0; i < paramList.size(); i++){
+            eachMap.putAll(paramList.get(i));
+
+            int cnt = calendarDAO.mergeSchedule(eachMap);
+
+            if(cnt == 1){
+                logger.info("스케줄 업데이트 성공 " + eachMap);
+                totalCnt = totalCnt + cnt;
+            }else {
+                logger.info("스케줄 업데이트 실패 " + eachMap);
+            }
+
+
+            eachMap.clear();
+        }
+
+        if(totalCnt == paramList.size()){
+            result.put("resultCode", "0");
+            result.put("resultMsg", "스케줄 List 업데이트 완료");
+        }else{
+            result.put("resultCode", "-1");
+            result.put("resultMsg", "스케줄 List 업데이트 실패");
+        }
+
+        return result;
+    }
+
+    //회원별 일별 스케줄 리스트 등록
+    public HashMap<String, Object> mergeCalendar(HashMap<String, Object> param){
+        logger.info("*******mergeScheduleList 등록 param : " + param);
+        HashMap result = new HashMap();
+
+        int cnt = calendarDAO.mergeSchedule(param);
+
+        if(cnt == 1){
+            logger.info("달력 업데이트 성공 " + param);
+        }else {
+            logger.info("달력 업데이트 실패 " + param);
+        }
+
+        if(cnt == 1){
+            result.put("resultCode", "0");
+            result.put("resultMsg", "달력 업데이트 완료");
+        }else{
+            result.put("resultCode", "-1");
+            result.put("resultMsg", "달력 업데이트 실패");
+        }
+
+        return result;
+    }
 }

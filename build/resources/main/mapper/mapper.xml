@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="blankspace.blankspaceprj.dao.MemberDAO">
+
+    <select id="findAll" resultType="HashMap">
+        select * from MEMBER
+    </select>
+
+    <select id="findMemberByID" resultType="HashMap" parameterType="HashMap">
+        SELECT
+            ID,
+            AUTH_TYPE,
+            NAME,
+            SALARY,
+            NICKNAME,
+            EMAIL_AUTH_CODE,
+            WORKING_DAY_CNT,
+            PHONE,
+            EMAIL,
+            DAY,
+            AUTH_STATE,
+            RGST_DATE
+        FROM MEMBER
+        WHERE 1=1
+            AND ID = #{ID}
+            <if test="AUTH_TYPE != null and AUTH_TYPE != ''">
+                AND AUTH_TYPE = #{AUTH_TYPE}
+            </if>
+    </select>
+
+    <select id="findMemberByIDreturnVO" resultType="blankspace.blankspaceprj.jwt.Member" >
+        SELECT
+            ID,
+            AUTH_TYPE,
+            NAME
+        FROM MEMBER
+        WHERE 1=1
+        AND ID = #{ID}
+        <if test="AUTH_TYPE != null and AUTH_TYPE != ''">
+            AND AUTH_TYPE = #{AUTH_TYPE}
+        </if>
+    </select>
+
+    <select id="findMemberByEmail" resultType="HashMap" parameterType="HashMap">
+        SELECT
+            ID,
+            AUTH_TYPE,
+            NAME,
+            SALARY,
+            NICKNAME,
+            EMAIL_AUTH_CODE,
+            WORKING_DAY_CNT,
+            PHONE,
+            EMAIL,
+            DAY,
+            AUTH_STATE,
+            RGST_DATE
+        FROM MEMBER
+        WHERE 1=1
+            AND EMAIL = #{EMAIL}
+    </select>
+
+    <insert id="joinMember" parameterType="HashMap">
+        INSERT INTO MEMBER(     /* 회원가입 등록 blankspace.blankspaceprj.dao.MemberDAO.joinMember */
+            ID,
+            AUTH_TYPE,
+            AUTH,
+            NAME,
+            SALARY,
+            NICKNAME,
+            PASSWORD,
+            EMAIL_AUTH_CODE,
+            WORKING_DAY_CNT,
+            PHONE,
+            EMAIL,
+            DAY,
+            RGST_DATE
+        )
+        VALUES (
+            #{ID},
+            #{AUTH_TYPE},
+            #{AUTH},
+            #{NAME},
+            #{SALARY},
+            #{NICKNAME},
+            #{PASSWORD},
+            #{EMAIL_AUTH_CODE},
+            #{WORKING_DAY_CNT},
+            #{PHONE},
+            #{EMAIL},
+            #{DAY},
+            NOW()
+        )
+        ON DUPLICATE KEY
+            UPDATE AUTH = #{AUTH}
+    </insert>
+
+    <update id="updateMember" parameterType="HashMap">
+        UPDATE MEMBER
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="PASSWORD != null and  PASSWORD != ''">PASSWORD = #{PASSWORD},</if>
+            <if test="WORKING_DAY_CNT != null and  WORKING_DAY_CNT != ''">WORKING_DAY_CNT = #{WORKING_DAY_CNT},</if>
+            <if test="PHONE != null and  PHONE != ''">PHONE = #{PHONE},</if>
+            <if test="DAY != null and  DAY != ''">DAY = #{DAY},</if>
+            <if test="SALARY != null and  SALARY != ''">SALARY = #{SALARY},</if>
+            <if test="NAME != null and  NAME != ''">NAME = #{NAME},</if>
+            <if test="NICKNAME != null and  NICKNAME != ''">NICKNAME = #{NICKNAME},</if>
+            <if test="EMAIL_MODIFY != null and  EMAIL_MODIFY == 'Y'.toString() ">
+                EMAIL_MODIFY_DATE = NOW(),
+                EMAIL = #{EMAIL},
+                AUTH_STATE = 'N',
+                EMAIL_AUTH_CODE = #{EMAIL_AUTH_CODE}
+            </if>
+            <if test="PASSWORD_FORGOT != null and  PASSWORD_FORGOT == 'Y'.toString() ">
+                EMAIL_AUTH_CODE = #{EMAIL_AUTH_CODE},
+                PASSWORD = #{PASSWORD}
+            </if>
+            <if test="PASSWORD != null and  PASSWORD != '' ">
+                PASSWORD = #{PASSWORD}
+            </if>
+            <if test='WITHDRAWAL != null and  WITHDRAWAL == "Y"'>
+                WITHDRAWAL_DATE = NOW(),
+                DEL_YN = 'Y'
+            </if>
+        </trim>
+        WHERE 1=1
+            AND ID = #{ID}
+            AND AUTH_TYPE = #{AUTH_TYPE}
+            AND DEL_YN = 'N'
+    </update>
+
+
+</mapper>

@@ -48,12 +48,21 @@ public class MemberController {
 
     @ApiOperation(value="일반 회원 가입 수행", notes="일반 회원 가입을 수행하는 API")
     @RequestMapping(value = "joinMember", method = RequestMethod.POST)
+    @ApiImplicitParams({@ApiImplicitParam(name = "ID", value = "유저 아이디", required = true, dataType = "String"),
+            @ApiImplicitParam(name = "PASSWORD", value = "비밀번호 (AUTH_TYPE = normal (일반회원가입)일 경우에만 필수)", required = true, dataType = "String"),
+            @ApiImplicitParam(name = "APP_JOIN_SECRET_KEY", value = "앱 비밀 키 (앱에서 회원가입 진행시에만 필수)", required = true, dataType = "String"),
+            @ApiImplicitParam(name = "AUTH", value = "상태", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "NAME", value = "이름", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "SALARY", value = "월급", required = false, dataType = "int"),
+            @ApiImplicitParam(name = "NICKNAME", value = "닉네임", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "WORKING_DAY_CNT", value = "근무일수", required = false, dataType = "int"),
+            @ApiImplicitParam(name = "PHONE", value = "폰번호", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "EMAIL", value = "이메일", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "DAY", value = "근무요일 (ex:목,금,월,화,수)", required = false, dataType = "String"),
+    })
     @ResponseBody
     public ResponseEntity<?> joinMember(@RequestBody HashMap<String, Object> param) throws Exception {
         ResultDTO responseDTO = new ResultDTO();
-
-
-
 
         param.put("AUTH_TYPE", "normal");
         param.put("AUTH", "normal");
@@ -84,6 +93,9 @@ public class MemberController {
 
     //카카오 페이지 로그인 후 CODE 받아오기. 후에 인증 시 필요함
     @RequestMapping(value = "receiveKakaoCode", method = RequestMethod.GET)
+    @ApiOperation(value="카카오 회원 가입 수행", notes="카카오 회원 가입을 수행하는 API")
+    @ApiImplicitParams({@ApiImplicitParam(name = "code", value = "토큰", required = true, dataType = "String")
+    })
     @ResponseBody
     public ResponseEntity<?> receiveKakaoCode(@RequestParam("code") String code) throws Exception {
         logger.debug("receiveKakaoCode 탐"+ code);
@@ -102,20 +114,13 @@ public class MemberController {
         return new ResponseEntity<>(responseDTO, HttpStatus.OK);
     }
 
-    @ApiOperation(value="카카오 회원 가입 수행", notes="카카오 회원 가입을 수행하는 API")
-    @RequestMapping(value = "joinMemberKakao", method = RequestMethod.POST)
+    @ApiOperation(value="로그인 수행", notes="로그인을 수행하는 API")
+    @ApiImplicitParams({@ApiImplicitParam(name = "ID", value = "회원 아이디", required = true, dataType = "String"),
+            @ApiImplicitParam(name = "PASSWORD", value = "회원 비밀번호 (normal 로그인일 경우에만 필수)", required = true, dataType = "String")
+    })
+    @RequestMapping(value = "login", method = RequestMethod.POST)
     @ResponseBody
-    public ResponseEntity<?> joinMemberKakao(@RequestBody HashMap<String, Object> param) throws Exception {
-        ResultDTO responseDTO = new ResultDTO();
-
-
-        return new ResponseEntity<>(responseDTO, HttpStatus.OK);
-    }
-
-    @ApiOperation(value="일반 회원 가입 수행", notes="일반 회원 가입을 수행하는 API")
-    @RequestMapping(value = "nomalLogin", method = RequestMethod.POST)
-    @ResponseBody
-    public ResponseEntity<?> nomalLogin(@RequestBody HashMap<String, Object> param) throws Exception {
+    public ResponseEntity<?> login(@RequestBody HashMap<String, Object> param) throws Exception {
         ResultDTO responseDTO = new ResultDTO();
 
         userService.login(param);
@@ -141,15 +146,20 @@ public class MemberController {
 
     //네이버 로그인 후 CODE 받아오기. 후에 인증 시 필요함
     @RequestMapping(value = "receiveNaverCode", method = RequestMethod.GET)
+    @ApiOperation(value="네이버 회원 가입 수행", notes="네이버 회원 가입을 수행하는 API")
+    @ApiImplicitParams({@ApiImplicitParam(name = "code", value = "토큰", required = true, dataType = "String")
+    })
     @ResponseBody
-    public ResponseEntity<?> receiveNaverCode(@RequestParam("code") String code, @RequestParam("state") String state) throws Exception {
+    public ResponseEntity<?> receiveNaverCode(@RequestParam("code") String code
+            //, @RequestParam("state") String state
+    ) throws Exception {
         logger.info("receiveNaverCode 탐"+ code);
 
         ResultDTO responseDTO = new ResultDTO();
         HashMap<String, Object> resultMap;
         HashMap<String, Object> map = new HashMap<>();
         map.put("code", code);
-        map.put("state", state);
+        //map.put("state", state);
         //네이버 토큰 받기 시작
         resultMap = userService.receiveNaverToken(map);
 
@@ -162,6 +172,9 @@ public class MemberController {
 
     //네이버 로그인 후 CODE 받아오기. 후에 인증 시 필요함
     @RequestMapping(value = "receiveGoogleCode", method = RequestMethod.GET)
+    @ApiOperation(value="구글 회원 가입 수행", notes="구글 회원 가입을 수행하는 API")
+    @ApiImplicitParams({@ApiImplicitParam(name = "code", value = "토큰", required = true, dataType = "String")
+    })
     @ResponseBody
     public ResponseEntity<?> receiveGoogleCode(@RequestBody HashMap<String, Object> param) throws Exception {
         logger.info("receiveGoogleCode 탐"+ param);
@@ -171,8 +184,8 @@ public class MemberController {
         HashMap<String, Object> map = new HashMap<>();
         map.put("code", param.get("token"));
         //map.put("state", state);
-        //네이버 토큰 받기 시작
-        resultMap = userService.receiveNaverToken(map);
+        //구글 토큰 받기 시작
+        resultMap = userService.receiveGoogleToken(map);
 
         responseDTO.setResultCode(resultMap.get("resultCode").toString());
         responseDTO.setResultMsg(resultMap.get("resultMsg").toString());
@@ -183,6 +196,7 @@ public class MemberController {
 
     //필터 테스트
     @RequestMapping(value = "makeToken", method = RequestMethod.GET)
+    @ApiOperation(value="필터 테스트", notes="필터 테스트")
     @ResponseBody
     public ResponseEntity<?> makeToken(@RequestBody HashMap param) throws Exception {
         HashMap result = new HashMap();
@@ -240,9 +254,20 @@ public class MemberController {
     }
 
     //회원정보 수정
-    @ApiOperation(value="회원가입 시 이메일 중복체크", notes="회원가입 시 이메일 중복체크 조회하는 API")
+    @ApiOperation(value="회원정보 수정", notes="회원정보 수정하는 API")
     @ApiImplicitParams({@ApiImplicitParam(name="ID", value = "유저 아이디", required = true, dataType = "String"),
-            @ApiImplicitParam(name="AUTH_TYPE", value = "유저 타입", required = true, dataType = "String")})
+            @ApiImplicitParam(name="AUTH_TYPE", value = "유저 타입", required = true, dataType = "String"),
+            @ApiImplicitParam(name = "PASSWORD", value = "비밀번호 (AUTH_TYPE = normal (일반회원가입)일 경우에만 필수)", required = true, dataType = "String"),
+            @ApiImplicitParam(name = "APP_JOIN_SECRET_KEY", value = "앱 비밀 키 (앱에서 회원가입 진행시에만 필수)", required = true, dataType = "String"),
+            @ApiImplicitParam(name = "AUTH", value = "상태", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "NAME", value = "이름", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "SALARY", value = "월급", required = false, dataType = "int"),
+            @ApiImplicitParam(name = "NICKNAME", value = "닉네임", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "WORKING_DAY_CNT", value = "근무일수", required = false, dataType = "int"),
+            @ApiImplicitParam(name = "PHONE", value = "폰번호", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "EMAIL", value = "이메일", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "DAY", value = "근무요일 (ex:목,금,월,화,수)", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "회원 탈퇴 수행할 경우 WITHDRAWAL=Y 로 세팅", value = "회원 탈퇴", required = false, dataType = "String")})
     @RequestMapping(value = "updateMemberInfo", method = RequestMethod.POST)
     @ResponseBody
     public ResponseEntity<?> updateMemberInfo(@RequestBody HashMap param) throws Exception {
@@ -257,7 +282,7 @@ public class MemberController {
     }
 
     //비밀번호 찾기
-    @ApiOperation(value="일반 회원 비밀번호 찾기", notes="비밀번호 찾기 API (난수로 비밀번호 업데이트 후 메일 발송)")
+    @ApiOperation(value="일반 회원 비밀번호 찾기", notes="비밀번호 찾기 API (난수로 비밀번호 업데이트 후 회원정보에 등록된 이메일로 메일 발송)")
     @ApiImplicitParams({@ApiImplicitParam(name="ID", value = "유저 아이디", required = true, dataType = "String"),
             @ApiImplicitParam(name="AUTH_TYPE", value = "유저 타입", required = true, dataType = "String")})
     @RequestMapping(value = "findNormalMemberPassword", method = RequestMethod.POST)
@@ -266,7 +291,7 @@ public class MemberController {
         ResultDTO resultDTO = new ResultDTO();
         HashMap result = new HashMap();
 
-        param.put("PASSWORD_MODIFY", "Y");
+        param.put("PASSWORD_FORGOT", "Y");
         result = userService.sendMail(param);
 
         resultDTO.setResultCode(result.get("resultCode").toString());
@@ -274,5 +299,26 @@ public class MemberController {
 
         return new ResponseEntity<>(resultDTO, HttpStatus.OK) ;
     }
+
+    //이메일 변경
+    @ApiOperation(value="회원 이메일 변경", notes="이메일 변경 API (난수로 EMAIL_AUTH_CODE 업데이트 후 메일 발송)")
+    @ApiImplicitParams({@ApiImplicitParam(name="ID", value = "유저 아이디", required = true, dataType = "String"),
+            @ApiImplicitParam(name="AUTH_TYPE", value = "유저 타입", required = true, dataType = "String"),
+            @ApiImplicitParam(name="EMAIL", value = "이메일", required = true, dataType = "String")})
+    @RequestMapping(value = "modifyMemberEmail", method = RequestMethod.POST)
+    @ResponseBody
+    public ResponseEntity<?> modifyMemberEmail(@RequestBody HashMap param) throws Exception {
+        ResultDTO resultDTO = new ResultDTO();
+        HashMap result = new HashMap();
+
+        param.put("EMAIL_MODIFY", "Y");
+        result = userService.sendMail(param);
+
+        resultDTO.setResultCode(result.get("resultCode").toString());
+        resultDTO.setResultMsg(result.get("resultMsg").toString());
+
+        return new ResponseEntity<>(resultDTO, HttpStatus.OK) ;
+    }
+
 
     }
