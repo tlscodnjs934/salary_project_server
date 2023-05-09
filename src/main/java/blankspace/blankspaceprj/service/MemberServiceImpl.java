@@ -5,6 +5,7 @@ import blankspace.blankspaceprj.dto.MemberVO;
 import blankspace.blankspaceprj.exception.CustomException;
 import blankspace.blankspaceprj.jwt.JwtTokenProvider;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -20,6 +21,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.codec.Base64;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Base64Utils;
 import org.thymeleaf.util.MapUtils;
 
@@ -79,6 +81,19 @@ public class MemberServiceImpl {
     @Value("${naver.client.secret}")
     String naverClientSecret;
 
+    @Value("${google.rest.api.token.url}")
+    String googleRestApiTokenUrl;
+
+    @Value("${google.rest.client.id}")
+    String googleRestClientId;
+
+    @Value("${google.rest.client.secret}")
+    String googleRestClientSecret;
+
+    @Value("${google.rest.redirect.uri}")
+    String googleRestRedirectUri;
+
+
     @Value("${jwt.secret.key}")
     String jwtSecretKey;
 
@@ -87,7 +102,7 @@ public class MemberServiceImpl {
 
 
     public ArrayList<HashMap<String, Object>> findAll(){
-        logger.debug("****findAll start****");
+        logger.info("****findAll start****");
         return memberDAO.findAll();
     }
 
@@ -166,13 +181,13 @@ public class MemberServiceImpl {
         
         //회원가입 성공
         if (cnt == 1){
-            logger.debug("****joinMember 등록 완료****  param : " );
+            logger.info("****joinMember 등록 완료****  param : " );
 
             param.put("resultCode", "0");
             param.put("resultMsg", "회원 등록 완료. 회원 ID :" + param.get("ID"));
             return param;
         }else {
-            logger.debug("****회원가입 실패****  param : " + param.get("ID"));
+            logger.info("****회원가입 실패****  param : " + param.get("ID"));
 
             param.put("resultCode", "-1");
             param.put("resultMsg", "회원 등록 실패. 회원 ID :" + param.get("ID"));
@@ -183,8 +198,9 @@ public class MemberServiceImpl {
     }
 
     //카카오 토큰 받기
+    @Transactional
     public HashMap<String, Object> receiveKakaoToken(HashMap<String, Object> param){
-        logger.debug("****receiveKakaoToken 카카오 토큰 받기 시작****  param : " + param.get("code"));
+        logger.info("****receiveKakaoToken 카카오 토큰 받기 시작****  param : " + param.get("code"));
         HashMap receivedData = new HashMap();
 
         String kakaoTokenUrl = kakaoRestApiTokenUrl + "?client_id=" + kakaoRestApiKey + "&redirect_uri=" + kakaoRestRedirectUri + "&grant_type=authorization_code&code=" + param.get("code");
@@ -194,79 +210,87 @@ public class MemberServiceImpl {
         String nickname="";
         String email="";
 
-//        try {
-//            URL url = new URL(kakaoTokenUrl);
-//            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-//
-//            conn.setRequestMethod("POST");
-//            // setDoOutput()은 OutputStream으로 POST 데이터를 넘겨 주겠다는 옵션이다.
-//            // POST 요청을 수행하려면 setDoOutput()을 true로 설정한다.
-//            conn.setDoOutput(true);
-//
-//            int responseCode = conn.getResponseCode();
-//            System.out.println("responseCode : " + responseCode);
-//
-//            // 요청을 통해 얻은 데이터를 InputStreamReader을 통해 읽어 오기
-//            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-//            String line;
-//            StringBuilder result = new StringBuilder();
-//
-//            while ((line = bufferedReader.readLine()) != null) {
-//                result.append(line);
-//            }
-//            System.out.println("response body : " + result);
-//            logger.info("토큰 받은 response body : " + result);
-//
-//            JsonElement element = JsonParser.parseString(result.toString());
-//
-//            accessToken = element.getAsJsonObject().get("access_token").getAsString();
-//            refreshToken = element.getAsJsonObject().get("refresh_token").getAsString();
-//
-//            System.out.println("accessToken : " + accessToken);
-//            System.out.println("refreshToken : " + refreshToken);
-//
-//            receivedData.put("accessToken", accessToken);
-//            receivedData.put("refreshToken", refreshToken);
-//
-//
-//            bufferedReader.close();
-//        } catch (MalformedURLException e){
-//            e.printStackTrace();
-//            receivedData.put("resultCode", "잘못된 URL 오류");
-//            receivedData.put("resultMsg", e.getMessage());
-//
-//            return receivedData;
-//        }
-//        catch (IOException e) {
-//            e.printStackTrace();
-//            receivedData.put("resultCode", "IOException 오류");
-//            receivedData.put("resultMsg", e.getMessage());
-//
-//            return receivedData;
-//        }
-//        catch (Exception e) {
-//            e.printStackTrace();
-//            receivedData.put("resultCode", "Exception 오류");
-//            receivedData.put("resultMsg", e.getMessage());
-//
-//            return receivedData;
-//        }
+        try {
+            URL url = new URL(kakaoTokenUrl);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
+            conn.setConnectTimeout(3000);
+            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            conn.setRequestMethod("POST");
+            // setDoOutput()은 OutputStream으로 POST 데이터를 넘겨 주겠다는 옵션이다.
+            // POST 요청을 수행하려면 setDoOutput()을 true로 설정한다.
+            conn.setDoOutput(true);
+
+            int responseCode = conn.getResponseCode();
+            System.out.println("responseCode : " + responseCode);
+
+            logger.info("****카카오 responseCode : " + responseCode);
+            logger.info("****카카오 responseMsg : " + conn.getResponseMessage());
+
+            // 요청을 통해 얻은 데이터를 InputStreamReader을 통해 읽어 오기
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            String line;
+            StringBuilder result = new StringBuilder();
+
+            while ((line = bufferedReader.readLine()) != null) {
+                result.append(line);
+            }
+            System.out.println("response body : " + result);
+            logger.info("토큰 받은 response body : " + result);
+
+            JsonElement element = JsonParser.parseString(result.toString());
+
+            accessToken = element.getAsJsonObject().get("access_token").getAsString();
+            refreshToken = element.getAsJsonObject().get("refresh_token").getAsString();
+
+            System.out.println("accessToken : " + accessToken);
+            System.out.println("refreshToken : " + refreshToken);
+
+            receivedData.put("accessToken", accessToken);
+            receivedData.put("refreshToken", refreshToken);
+
+
+            bufferedReader.close();
+        } catch (MalformedURLException e){
+            e.printStackTrace();
+            receivedData.put("resultCode", "잘못된 URL 오류");
+            receivedData.put("resultMsg", e.getMessage());
+
+            return receivedData;
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+            receivedData.put("resultCode", "IOException 오류");
+            receivedData.put("resultMsg", e.getMessage());
+
+            return receivedData;
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            receivedData.put("resultCode", "Exception 오류");
+            receivedData.put("resultMsg", e.getMessage());
+
+            return receivedData;
+        }
 
         //받은 토큰으로 카카오 사용자 정보 조회 호출
-        String kakaoUserInfoUrl= kakaoRestUserInfoUri + "?client_id=" + kakaoRestApiKey + "&redirect_uri=" + kakaoRestRedirectUri + "&grant_type=authorization_code&code=" + param.get("code");
+        String kakaoUserInfoUrl= kakaoRestUserInfoUri + "?client_id=" + kakaoRestApiKey + "&redirect_uri=" + kakaoRestRedirectUri + "&grant_type=authorization_code&code=" + accessToken;
 
         try {
             URL url = new URL(kakaoUserInfoUrl);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
+            conn.setConnectTimeout(3000);
+            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
             conn.setRequestMethod("POST");
             // setDoOutput()은 OutputStream으로 POST 데이터를 넘겨 주겠다는 옵션이다.
             // POST 요청을 수행하려면 setDoOutput()을 true로 설정한다.
             conn.setDoOutput(true);
-            conn.setRequestProperty("Authorization", "Bearer " + param.get("code"));
+            conn.setRequestProperty("Authorization", "Bearer " + accessToken);
 
             int responseCode = conn.getResponseCode();
-            System.out.println("responseCode : " + responseCode);
+            logger.info("****카카오 사용자 responseCode : " + responseCode);
+            logger.info("****카카오 사용자 responseMsg : " + conn.getResponseMessage());
 
             // 요청을 통해 얻은 데이터를 InputStreamReader을 통해 읽어 오기
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
@@ -342,12 +366,12 @@ public class MemberServiceImpl {
             //회원가입 진행
             receivedData.put("ID", receivedData.get("email"));
             receivedData.put("EMAIL", receivedData.get("email"));
-            receivedData.put("AUTH", param.get("token"));
+            receivedData.put("AUTH", refreshToken);
 
             member = joinMember(receivedData);
 
-            receivedData.put("resultCode", "0");
-            receivedData.put("resultMsg", "카카오 회원가입 성공");
+            receivedData.put("resultCode", member.get("resultCode"));
+            receivedData.put("resultMsg", "카카오 " + member.get("resultMsg"));
         }else{
             logger.info("카카오 기존 회원, 회원가입 미진행, 로그인 호출 : " + receivedData);
 
@@ -363,8 +387,9 @@ public class MemberServiceImpl {
     }
 
     //네이버 토큰 받기
+    @Transactional
     public HashMap<String, Object> receiveNaverToken(HashMap<String, Object> param){
-        logger.debug("****receiveNaverToken 네이버 토큰 받기 시작****  param : " + param.get("code"));
+        logger.info("****receiveNaverToken 네이버 토큰 받기 시작****  param : " + param.get("code"));
         HashMap receivedData = new HashMap();
 
         logger.info("naverClientSecret :"+naverClientSecret);
@@ -375,66 +400,70 @@ public class MemberServiceImpl {
         String refreshToken;
         String email="";
 
-//        try {
-//            URL url = new URL(naverTokenUrl);
-//            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-//
-//            conn.setRequestMethod("POST");
-//            // setDoOutput()은 OutputStream으로 POST 데이터를 넘겨 주겠다는 옵션이다.
-//            // POST 요청을 수행하려면 setDoOutput()을 true로 설정한다.
-//            conn.setDoOutput(true);
-//
-//            int responseCode = conn.getResponseCode();
-//            System.out.println("responseCode : " + responseCode);
-//
-//            // 요청을 통해 얻은 데이터를 InputStreamReader을 통해 읽어 오기
-//            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-//            String line;
-//            StringBuilder result = new StringBuilder();
-//
-//            while ((line = bufferedReader.readLine()) != null) {
-//                result.append(line);
-//            }
-//            System.out.println("response body : " + result);
-//            logger.info("토큰 받은 response body : " + result);
-//
-//            JsonElement element = JsonParser.parseString(result.toString());
-//
-//            accessToken = element.getAsJsonObject().get("access_token").getAsString();
-//            refreshToken = element.getAsJsonObject().get("refresh_token").getAsString();
-//
-//            System.out.println("accessToken : " + accessToken);
-//            System.out.println("refreshToken : " + refreshToken);
-//
-//            receivedData.put("accessToken", accessToken);
-//            receivedData.put("refreshToken", refreshToken);
-//
-//
-//            bufferedReader.close();
-//        } catch (MalformedURLException e){
-//            e.printStackTrace();
-//            logger.info(e.getMessage());
-//            receivedData.put("resultCode", "잘못된 URL 오류");
-//            receivedData.put("resultMsg", e.getMessage());
-//
-//            return receivedData;
-//        }
-//        catch (IOException e) {
-//            e.printStackTrace();
-//            logger.info(e.getMessage());
-//            receivedData.put("resultCode", "IOException 오류");
-//            receivedData.put("resultMsg", e.getMessage());
-//
-//            return receivedData;
-//        }
-//        catch (Exception e) {
-//            e.printStackTrace();
-//            logger.info(e.getMessage());
-//            receivedData.put("resultCode", "Exception 오류");
-//            receivedData.put("resultMsg", e.getMessage());
-//
-//            return receivedData;
-//        }
+        try {
+            URL url = new URL(naverTokenUrl);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
+            conn.setConnectTimeout(3000);
+            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            conn.setRequestMethod("POST");
+            // setDoOutput()은 OutputStream으로 POST 데이터를 넘겨 주겠다는 옵션이다.
+            // POST 요청을 수행하려면 setDoOutput()을 true로 설정한다.
+            conn.setDoOutput(true);
+
+            int responseCode = conn.getResponseCode();
+            logger.info("****네이버 responseCode : " + responseCode);
+            logger.info("****네이버 responseMsg : " + conn.getResponseMessage());
+            
+
+            // 요청을 통해 얻은 데이터를 InputStreamReader을 통해 읽어 오기
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            String line;
+            StringBuilder result = new StringBuilder();
+
+            while ((line = bufferedReader.readLine()) != null) {
+                result.append(line);
+            }
+            System.out.println("response body : " + result);
+            logger.info("토큰 받은 response body : " + result);
+
+            JsonElement element = JsonParser.parseString(result.toString());
+
+            accessToken = element.getAsJsonObject().get("access_token").getAsString();
+            refreshToken = element.getAsJsonObject().get("refresh_token").getAsString();
+
+            System.out.println("accessToken : " + accessToken);
+            System.out.println("refreshToken : " + refreshToken);
+
+            receivedData.put("accessToken", accessToken);
+            receivedData.put("refreshToken", refreshToken);
+
+
+            bufferedReader.close();
+        } catch (MalformedURLException e){
+            e.printStackTrace();
+            logger.info(e.getMessage());
+            receivedData.put("resultCode", "잘못된 URL 오류");
+            receivedData.put("resultMsg", e.getMessage());
+
+            return receivedData;
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+            logger.info(e.getMessage());
+            receivedData.put("resultCode", "IOException 오류");
+            receivedData.put("resultMsg", e.getMessage());
+
+            return receivedData;
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            logger.info(e.getMessage());
+            receivedData.put("resultCode", "Exception 오류");
+            receivedData.put("resultMsg", e.getMessage());
+
+            return receivedData;
+        }
 
         //받은 토큰으로 네이버 사용자 정보 조회 호출
         String naverUserInfoUrl= "https://openapi.naver.com/v1/nid/me";
@@ -443,14 +472,18 @@ public class MemberServiceImpl {
             URL url = new URL(naverUserInfoUrl);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
+            conn.setConnectTimeout(3000);
+            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
             conn.setRequestMethod("POST");
             // setDoOutput()은 OutputStream으로 POST 데이터를 넘겨 주겠다는 옵션이다.
             // POST 요청을 수행하려면 setDoOutput()을 true로 설정한다.
             conn.setDoOutput(true);
-            conn.setRequestProperty("Authorization", "Bearer " + param.get("code"));
+            conn.setRequestProperty("Authorization", "Bearer " + accessToken);
 
             int responseCode = conn.getResponseCode();
-            System.out.println("responseCode : " + responseCode);
+
+            logger.info("****네이버 사용자 responseCode : " + responseCode);
+            logger.info("****네이버 사용자 responseMsg : " + conn.getResponseMessage());
 
             // 요청을 통해 얻은 데이터를 InputStreamReader을 통해 읽어 오기
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
@@ -517,7 +550,7 @@ public class MemberServiceImpl {
             //회원가입 진행
             receivedData.put("ID", receivedData.get("email"));
             receivedData.put("EMAIL", receivedData.get("email"));
-            receivedData.put("AUTH", param.get("token"));
+            receivedData.put("AUTH", refreshToken);
 
             member = joinMember(receivedData);
 
@@ -540,94 +573,50 @@ public class MemberServiceImpl {
     }
 
     //구글 토큰으로 사용자 정보 받는 서비스
+    @Transactional
     public HashMap<String, Object> receiveGoogleToken(HashMap<String, Object> param){
-        logger.debug("****receiveGoogleToken 구글 토큰 받기 시작****  param : " + param.get("code"));
+        logger.info("****receiveGoogleToken 구글 토큰 받기 시작****  param : " + param.get("code"));
         HashMap receivedData = new HashMap();
+        HttpURLConnection conn = null;
 
-        logger.info("naverClientSecret :"+naverClientSecret);
-
-        String naverTokenUrl = naverRestApiTokenUrl + "?client_id=" + naverRestApiKey + "&client_secret=" + naverClientSecret + "&grant_type=authorization_code&code=" + param.get("code") + "&state=" + param.get("state");
+        String googleTokenUrl = googleRestApiTokenUrl + "?client_id=" + googleRestClientId + "&client_secret=" + googleRestClientSecret + "&grant_type=authorization_code&code=" + param.get("code") + "&redirect_uri=" + googleRestRedirectUri;
+        //String googleTokenUrl = googleRestApiTokenUrl;
 
         String accessToken;
         String refreshToken;
         String email="";
 
-//        try {
-//            URL url = new URL(naverTokenUrl);
-//            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-//
-//            conn.setRequestMethod("POST");
-//            // setDoOutput()은 OutputStream으로 POST 데이터를 넘겨 주겠다는 옵션이다.
-//            // POST 요청을 수행하려면 setDoOutput()을 true로 설정한다.
-//            conn.setDoOutput(true);
-//
-//            int responseCode = conn.getResponseCode();
-//            System.out.println("responseCode : " + responseCode);
-//
-//            // 요청을 통해 얻은 데이터를 InputStreamReader을 통해 읽어 오기
-//            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-//            String line;
-//            StringBuilder result = new StringBuilder();
-//
-//            while ((line = bufferedReader.readLine()) != null) {
-//                result.append(line);
-//            }
-//            System.out.println("response body : " + result);
-//            logger.info("토큰 받은 response body : " + result);
-//
-//            JsonElement element = JsonParser.parseString(result.toString());
-//
-//            accessToken = element.getAsJsonObject().get("access_token").getAsString();
-//            refreshToken = element.getAsJsonObject().get("refresh_token").getAsString();
-//
-//            System.out.println("accessToken : " + accessToken);
-//            System.out.println("refreshToken : " + refreshToken);
-//
-//            receivedData.put("accessToken", accessToken);
-//            receivedData.put("refreshToken", refreshToken);
-//
-//
-//            bufferedReader.close();
-//        } catch (MalformedURLException e){
-//            e.printStackTrace();
-//            logger.info(e.getMessage());
-//            receivedData.put("resultCode", "잘못된 URL 오류");
-//            receivedData.put("resultMsg", e.getMessage());
-//
-//            return receivedData;
-//        }
-//        catch (IOException e) {
-//            e.printStackTrace();
-//            logger.info(e.getMessage());
-//            receivedData.put("resultCode", "IOException 오류");
-//            receivedData.put("resultMsg", e.getMessage());
-//
-//            return receivedData;
-//        }
-//        catch (Exception e) {
-//            e.printStackTrace();
-//            logger.info(e.getMessage());
-//            receivedData.put("resultCode", "Exception 오류");
-//            receivedData.put("resultMsg", e.getMessage());
-//
-//            return receivedData;
-//        }
-
-        //받은 토큰으로 구글 사용자 정보 조회 호출
-        String googleUserInfoUrl= "https://oauth2.googleapis.com/tokeninfo";
-
         try {
-            URL url = new URL(googleUserInfoUrl);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-
+            URL url = new URL(googleTokenUrl);
+            conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
+            conn.setConnectTimeout(7000);
+            conn.setRequestProperty("Content-Type", "application/json; utf-8");
+            conn.setDoOutput(true);
+            //conn.setRequestProperty("Content-Length","0");
+//            conn.setRequestProperty("client_id", googleRestClientId);
+//            conn.setRequestProperty("client_secret", googleRestClientSecret);
+//            conn.setRequestProperty("grant_type", "authorization_code");
+//            conn.setRequestProperty("code", (String) param.get("code"));
+//            conn.setRequestProperty("redirect_uri", googleRestRedirectUri);
+
+            //리퀘스트 body 아무것도 안보내면 411 ERROR 발생... 빈값 json 전송으로 해결
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.addProperty("{}", "");
+
+            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(conn.getOutputStream()));
+            bw.write(jsonObject.toString());
+            bw.flush();
+            bw.close();
+
             // setDoOutput()은 OutputStream으로 POST 데이터를 넘겨 주겠다는 옵션이다.
             // POST 요청을 수행하려면 setDoOutput()을 true로 설정한다.
-            conn.setDoOutput(true);
-            conn.setRequestProperty("id_token", (String) param.get("token"));
+
 
             int responseCode = conn.getResponseCode();
-            System.out.println("responseCode : " + responseCode);
+            logger.info("****구글  responseCode : " + responseCode);
+            logger.info("****구글  responseMsg : " + conn.getResponseMessage());
+
 
             // 요청을 통해 얻은 데이터를 InputStreamReader을 통해 읽어 오기
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
@@ -638,7 +627,83 @@ public class MemberServiceImpl {
                 result.append(line);
             }
             System.out.println("response body : " + result);
-            logger.info("네이버 사용자 정보 받은 response body : " + result);
+            logger.info("토큰 받은 response body : " + result);
+
+            JsonElement element = JsonParser.parseString(result.toString());
+
+            accessToken = element.getAsJsonObject().get("access_token").getAsString();
+
+            System.out.println("accessToken : " + accessToken);
+
+            receivedData.put("accessToken", accessToken);
+
+
+            bufferedReader.close();
+        } catch (MalformedURLException e){
+            e.printStackTrace();
+            logger.info(e.getMessage());
+            receivedData.put("resultCode", "잘못된 URL 오류");
+            receivedData.put("resultMsg", e.getMessage());
+
+            return receivedData;
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+            logger.info(e.getMessage());
+            receivedData.put("resultCode", "IOException 오류");
+            receivedData.put("resultMsg", e.getMessage());
+
+            return receivedData;
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            logger.info(e.getMessage());
+            receivedData.put("resultCode", "Exception 오류");
+            receivedData.put("resultMsg", e.getMessage());
+
+            return receivedData;
+        }finally {
+            conn.disconnect();
+        }
+
+        //받은 토큰으로 구글 사용자 정보 조회 호출
+        //String googleUserInfoUrl= "https://oauth2.googleapis.com/tokeninfo";
+        String googleUserInfoUrl= "https://www.googleapis.com/oauth2/v2/userinfo";
+
+        try {
+            URL url = new URL(googleUserInfoUrl);
+            HttpURLConnection conn2 = (HttpURLConnection) url.openConnection();
+
+            conn2.setRequestMethod("GET");
+            conn2.setConnectTimeout(7000);
+            conn2.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+            conn2.setRequestProperty("Authorization", "Bearer " + accessToken);
+            // setDoOutput()은 OutputStream으로 POST 데이터를 넘겨 주겠다는 옵션이다.
+            // POST 요청을 수행하려면 setDoOutput()을 true로 설정한다.
+            conn2.setDoOutput(true);
+
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.addProperty("{}", "");
+
+            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(conn2.getOutputStream()));
+            bw.write(jsonObject.toString());
+            bw.flush();
+            bw.close();
+
+            int responseCode = conn2.getResponseCode();
+            logger.info("****구글 사용자 responseCode : " + responseCode);
+            logger.info("****구글 사용자 responseMsg : " + conn2.getResponseMessage());
+
+            // 요청을 통해 얻은 데이터를 InputStreamReader을 통해 읽어 오기
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(conn2.getInputStream()));
+            String line;
+            StringBuilder result = new StringBuilder();
+
+            while ((line = bufferedReader.readLine()) != null) {
+                result.append(line);
+            }
+            System.out.println("response body : " + result);
+            logger.info("구글 사용자 정보 받은 response body : " + result);
 
             JsonElement element = JsonParser.parseString(result.toString());
             JsonElement response = element.getAsJsonObject().get("response");
@@ -675,6 +740,8 @@ public class MemberServiceImpl {
             receivedData.put("resultMsg", e.getMessage());
 
             return receivedData;
+        }finally {
+            conn.disconnect();
         }
 
         logger.info("receivedData ++ " + receivedData);
@@ -716,7 +783,7 @@ public class MemberServiceImpl {
     }
 
     public HashMap login(HashMap param){
-        logger.debug("*********login 로그인 시작****************" + param);
+        logger.info("*********login 로그인 시작****************" + param);
         HashMap result = new HashMap();
         HashMap<String, Object> member = new HashMap();;
         
@@ -790,7 +857,7 @@ public class MemberServiceImpl {
 
     //ID로 회원 조회
     public HashMap<String, Object> findMemberByIDForJoin(HashMap<String, Object> param){
-        logger.info("***findMemberByID start***" + param);
+        logger.info("***findMemberByIDForJoin start***" + param);
 
         HashMap<String, Object> result = new HashMap<>();
         
@@ -894,12 +961,29 @@ public class MemberServiceImpl {
     }
 
     //이메일 발송 서비스
+    @Transactional
     public HashMap<String, Object> sendMail(HashMap<String, Object> param) {
         HashMap<String, Object> result = new HashMap<>();
         HashMap<String, Object> updateMemberMap = new HashMap<>();
-        //난수 생성
-        String randomNum = createCode();
 
+        if(!MapUtils.containsKey(param, "ID")){
+            logger.info("ID가 입력되지 않았습니다. param : " + param);
+            result.put("resultCode", "-1");
+            result.put("resultMsg", "ID가 입력되지 않았습니다.");
+
+            return result;
+        }
+
+        if(!MapUtils.containsKey(param, "AUTH_TYPE")){
+            logger.info("AUTH_TYPE이 입력되지 않았습니다. param : " + param);
+            result.put("resultCode", "-1");
+            result.put("resultMsg", "AUTH_TYPE이 입력되지 않았습니다.");
+
+            return result;
+        }
+
+        //랜덤 문자열 생성
+        String randomNum = createCode();
 
         //비밀번호 찾기
         if ("Y".equals(param.get("PASSWORD_FORGOT"))) {
@@ -915,6 +999,9 @@ public class MemberServiceImpl {
             HashMap<String, Object> member = memberDAO.findMemberByID(param);
 
             //TODO 회원 조회해서 등록된 이메일로 발송 필요
+            updateMemberMap.put("ID", member.get("ID"));
+            updateMemberMap.put("AUTH_TYPE", member.get("AUTH_TYPE"));
+            updateMemberMap.put("PASSWORD_FORGOT", param.get("PASSWORD_FORGOT"));
             updateMemberMap.put("EMAIL", member.get("EMAIL"));
             updateMemberMap.put("EMAIL_AUTH_CODE", randomNum);
             
@@ -923,7 +1010,17 @@ public class MemberServiceImpl {
             updateMemberMap.put("PASSWORD", bCryptPasswordEncoder.encode(randomNum));
             
             //회원 업데이트 호출
-            memberDAO.updateMember(updateMemberMap);
+            int cnt = memberDAO.updateMember(updateMemberMap);
+
+            if(cnt == 1){
+                logger.info("비밀번호 변경 성공 : " + updateMemberMap);
+            }else {
+                logger.info("비밀번호 변경 실패 : " + updateMemberMap);
+                result.put("resultCode", "-1");
+                result.put("resultMsg", "비밀번호 변경 중 오류가 발생했습니다. 관리자에게 문의하시기 바랍니다.");
+
+                return result;
+            }
         }else if ("Y".equals(param.get("EMAIL_MODIFY"))){
             //이메일 변경 시
             if(!MapUtils.containsKey(param, "EMAIL")){
@@ -935,46 +1032,35 @@ public class MemberServiceImpl {
             }
 
             //메일 인증 시
+            updateMemberMap.put("ID", param.get("ID"));
+            updateMemberMap.put("AUTH_TYPE", param.get("AUTH_TYPE"));
+            updateMemberMap.put("EMAIL_MODIFY", param.get("EMAIL_MODIFY"));
             updateMemberMap.put("EMAIL", param.get("EMAIL"));
             updateMemberMap.put("EMAIL_AUTH_CODE", randomNum);
 
             //회원 업데이트 호출
-            memberDAO.updateMember(updateMemberMap);
+            int cnt = memberDAO.updateMember(updateMemberMap);
 
+            if(cnt == 1){
+                logger.info("이메일 변경 성공 : " + updateMemberMap);
+            }else {
+                logger.info("이메일 변경 실패 : " + updateMemberMap);
+                result.put("resultCode", "-1");
+                result.put("resultMsg", "이메일 변경 중 오류가 발생했습니다. 관리자에게 문의하시기 바랍니다.");
+
+                return result;
+            }
         }
 
-        try {
-            mailService.mailSend(updateMemberMap);
-        } catch (MessagingException e) {
-            e.printStackTrace();
-            logger.error("MessagingException 에러" + e);
-            throw new RuntimeException(e);
+        boolean mailResult = mailService.mailSend(updateMemberMap);
+
+        if(mailResult ==true) {
+            result.put("resultCode", "0");
+            result.put("resultMsg", "MemberServiceImpl sendMail 메일 발송 완료");
+        }else {
+            result.put("resultCode", "-1");
+            result.put("resultMsg", "MemberServiceImpl sendMail 메일 발송 실패");
         }
-//        try {
-//            MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, false, "UTF-8");
-//            mimeMessageHelper.setTo((String) param.get("EMAIL")); // 메일 수신자 TODO : 사용자 계정 이메일로
-//            mimeMessageHelper.setSubject("끌린더에서 발송한 코드입니다."); // 메일 제목
-//            mimeMessageHelper.setText("끌린더에서 발송한 코드는 " + randomNum + "입니다.", true); // 메일 본문 내용, HTML 여부
-//            javaMailSender.send(mimeMessage);
-//
-//            logger.info("메일 발송 Success");
-//
-//            result.put("resultCode", "0");
-//            result.put("resultMsg", "메일 발송 성공");
-//
-//            return result;
-//
-//        } catch (Exception e) {
-//            logger.info("메일 발송  fail");
-//
-//            result.put("resultCode", "-1");
-//            result.put("resultMsg", "메일 발송 실패 : " + e.getMessage());
-//
-//            return result;
-//
-//        }
-        result.put("resultCode", "0");
-        result.put("resultMsg", "MemberServiceImpl sendMail 메일 발송 완료");
         
         return result;
     }

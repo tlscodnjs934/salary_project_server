@@ -3,10 +3,10 @@
 <mapper namespace="blankspace.blankspaceprj.dao.CalendarDAO">
 
     <select id="selectCalendar">
-        SELECT
+        SELECT          /*CalenderMapper.xml - selectCalendar*/
             A.ID,
             A.AUTH_TYPE,
-            A.DATE,
+            A.SCHEDULE_DATE,
             A.STATE,
             A.CONTENT,
             A.DAY_OFF
@@ -14,15 +14,15 @@
         WHERE 1=1
             AND A.ID = #{ID}
             AND A.AUTH_TYPE = #{AUTH_TYPE}
-            AND A.DATE = #{DATE}
+            AND A.SCHEDULE_DATE = #{SCHEDULE_DATE}
             AND A.DEL_YN = 'N'
     </select>
 
     <select id="selectScheduleList">
-        SELECT
+        SELECT              /*CalenderMapper.xml - selectScheduleList*/
             A.ID,
             A.AUTH_TYPE,
-            A.DATE,
+            A.SCHEDULE_DATE,
             A.SN,
             A.TO_DO,
             A.CHK_YN,
@@ -32,9 +32,58 @@
         WHERE 1=1
             AND A.ID = #{ID}
             AND A.AUTH_TYPE = #{AUTH_TYPE}
-            AND A.DATE = #{DATE}
+            AND A.SCHEDULE_DATE = #{SCHEDULE_DATE}
             AND A.DEL_YN = 'N'
     </select>
+
+    <insert id="mergeSchedule">
+        INSERT INTO SCHEDULE (      /* 회원가입 등록 CalenderMapper.xml - mergeSchedule */
+            ID,
+            AUTH_TYPE,
+            SCHEDULE_DATE,
+            SN,
+            TO_DO,
+            TIME_START,
+            TIME_END
+        )
+        VALUES (
+            #{ID},
+            #{AUTH_TYPE},
+            #{SCHEDULE_DATE},
+            #{SN},
+            #{TO_DO},
+            #{TIME_START},
+            #{TIME_END}
+        ) ON DUPLICATE KEY UPDATE
+        TO_DO = #{TO_DO},
+        CHK_YN = #{CHK_YN},
+        TIME_START = #{TIME_START},
+        TIME_END = #{TIME_END},
+        DEL_YN = #{DEL_YN}
+    </insert>
+
+    <insert id="mergeCalendar">
+        INSERT INTO CALENDAR (      /* 회원가입 등록 CalenderMapper.xml - mergeCalendar */
+            ID,
+            AUTH_TYPE,
+            SCHEDULE_DATE,
+            STATE,
+            CONTENT,
+            DAY_OFF
+        )
+        VALUES (
+            #{ID},
+            #{AUTH_TYPE},
+            #{SCHEDULE_DATE},
+            #{STATE},
+            #{CONTENT},
+            #{DAY_OFF}
+        ) ON DUPLICATE KEY UPDATE
+        STATE = #{STATE},
+        CONTENT = #{CONTENT},
+        DAY_OFF = #{DAY_OFF},
+        DEL_YN = #{DEL_YN}
+    </insert>
 
 
 </mapper>

@@ -40,7 +40,7 @@ public class MemberController {
     public ResponseEntity<?> findAllMember() throws Exception {
         ResultDTO responseDTO = new ResultDTO();
         responseDTO.setResultCode("0");
-        responseDTO.setResultMsg("아령이 바보");
+        responseDTO.setResultMsg("회원 목록 전체 조회 완료");
         responseDTO.setData(userService.findAll());
         logger.info("responseDTO : " + responseDTO);
         return new ResponseEntity<>(responseDTO, HttpStatus.OK);
@@ -84,7 +84,7 @@ public class MemberController {
         //return  "<a href=\"https://kauth.kakao.com/oauth/authorize?client_id=0a57a2699657f4e2b2e2b760f8e0dc51&redirect_uri=http://127.0.0.1:8080/api/member/receiveKakaoCode&response_type=code\" >카카오 로그인</a>";
 
         RedirectView redirectView = new RedirectView();
-        redirectView.setUrl("https://kauth.kakao.com/oauth/authorize?client_id=0a57a2699657f4e2b2e2b760f8e0dc51&redirect_uri=http://localhost:8080/api/member/receiveKakaoCode&response_type=code");
+        redirectView.setUrl("https://kauth.kakao.com/oauth/authorize?client_id=0a57a2699657f4e2b2e2b760f8e0dc51&redirect_uri=http://43.201.134.176:8080/api/member/receiveKakaoCode&response_type=code");
         return redirectView;
 
     }
@@ -92,18 +92,18 @@ public class MemberController {
 
 
     //카카오 페이지 로그인 후 CODE 받아오기. 후에 인증 시 필요함
-    @RequestMapping(value = "receiveKakaoCode", method = RequestMethod.GET)
+    @RequestMapping(value = "receiveKakaoCode", method = RequestMethod.POST)
     @ApiOperation(value="카카오 회원 가입 수행", notes="카카오 회원 가입을 수행하는 API")
-    @ApiImplicitParams({@ApiImplicitParam(name = "code", value = "토큰", required = true, dataType = "String")
+    @ApiImplicitParams({@ApiImplicitParam(name = "code", value = "코드", required = true, dataType = "String")
     })
     @ResponseBody
-    public ResponseEntity<?> receiveKakaoCode(@RequestParam("code") String code) throws Exception {
-        logger.debug("receiveKakaoCode 탐"+ code);
-        System.out.println("receiveKakaoCode 탐"+ code);
+    public ResponseEntity<?> receiveKakaoCode(@RequestBody HashMap<String, Object> param) throws Exception {
+        logger.info("receiveKakaoCode 탐"+ param);
+
         ResultDTO responseDTO = new ResultDTO();
         HashMap<String, Object> resultMap;
         HashMap<String, Object> map = new HashMap<>();
-        map.put("code", code);
+        map.put("code", param.get("code"));
         //카카오 토큰 받기 시작
         resultMap = userService.receiveKakaoToken(map);
 
@@ -130,7 +130,7 @@ public class MemberController {
     //네이버 로그인 페이지 호출
     @GetMapping("naver")
     public RedirectView naverLogin(Model model){
-        String redirect_url="http://127.0.0.1:8080/api/member/receiveNaverCode";
+        String redirect_url="http://43.201.134.176:8080/api/member/receiveNaverCode";
         String state;
 
         try {
@@ -150,15 +150,16 @@ public class MemberController {
     @ApiImplicitParams({@ApiImplicitParam(name = "code", value = "토큰", required = true, dataType = "String")
     })
     @ResponseBody
-    public ResponseEntity<?> receiveNaverCode(@RequestParam("code") String code
+    public ResponseEntity<?> receiveNaverCode(//@RequestParam("code") String code
+                                              @RequestBody HashMap<String, Object> param
             //, @RequestParam("state") String state
     ) throws Exception {
-        logger.info("receiveNaverCode 탐"+ code);
+        logger.info("receiveNaverCode 탐"+ param);
 
         ResultDTO responseDTO = new ResultDTO();
         HashMap<String, Object> resultMap;
         HashMap<String, Object> map = new HashMap<>();
-        map.put("code", code);
+        map.put("code", param.get("code"));
         //map.put("state", state);
         //네이버 토큰 받기 시작
         resultMap = userService.receiveNaverToken(map);
@@ -170,19 +171,30 @@ public class MemberController {
         return new ResponseEntity<>(responseDTO, HttpStatus.OK);
     }
 
+    //구글 로그인 페이지 호출
+    @GetMapping("google")
+    public RedirectView google(Model model){
+
+        RedirectView redirectView = new RedirectView();
+        redirectView.setUrl("https://accounts.google.com/o/oauth2/v2/auth?scope=https%3A//www.googleapis.com/auth/drive.metadata.readonly&client_id=512350550459-e79v38hs0r6k6pvlcj8ke15ntf5fdcl9.apps.googleusercontent.com&response_type=code&redirect_uri=http://localhost:8080/api/member/receiveGoogleCode");
+        //redirectView.setUrl("https://oauth2.googleapis.com?client_id=512350550459-e79v38hs0r6k6pvlcj8ke15ntf5fdcl9.apps.googleusercontent.com&redirect_uri=http://localhost:8080/api/member/receiveGoogleCode&grant_type=authorization_code&client_secret=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");
+        return redirectView;
+
+    }
+
     //네이버 로그인 후 CODE 받아오기. 후에 인증 시 필요함
     @RequestMapping(value = "receiveGoogleCode", method = RequestMethod.GET)
     @ApiOperation(value="구글 회원 가입 수행", notes="구글 회원 가입을 수행하는 API")
     @ApiImplicitParams({@ApiImplicitParam(name = "code", value = "토큰", required = true, dataType = "String")
     })
     @ResponseBody
-    public ResponseEntity<?> receiveGoogleCode(@RequestBody HashMap<String, Object> param) throws Exception {
-        logger.info("receiveGoogleCode 탐"+ param);
+    public ResponseEntity<?> receiveGoogleCode(@RequestParam String code) throws Exception {
+        logger.info("receiveGoogleCode 탐"+ code);
 
         ResultDTO responseDTO = new ResultDTO();
         HashMap<String, Object> resultMap;
         HashMap<String, Object> map = new HashMap<>();
-        map.put("code", param.get("token"));
+        map.put("code", code);
         //map.put("state", state);
         //구글 토큰 받기 시작
         resultMap = userService.receiveGoogleToken(map);

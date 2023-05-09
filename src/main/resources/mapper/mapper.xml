@@ -98,7 +98,6 @@
     <update id="updateMember" parameterType="HashMap">
         UPDATE MEMBER
         <trim prefix="SET" suffixOverrides=",">
-            <if test="PASSWORD != null and  PASSWORD != ''">PASSWORD = #{PASSWORD},</if>
             <if test="WORKING_DAY_CNT != null and  WORKING_DAY_CNT != ''">WORKING_DAY_CNT = #{WORKING_DAY_CNT},</if>
             <if test="PHONE != null and  PHONE != ''">PHONE = #{PHONE},</if>
             <if test="DAY != null and  DAY != ''">DAY = #{DAY},</if>
@@ -115,7 +114,7 @@
                 EMAIL_AUTH_CODE = #{EMAIL_AUTH_CODE},
                 PASSWORD = #{PASSWORD}
             </if>
-            <if test="PASSWORD != null and  PASSWORD != '' ">
+            <if test="PASSWORD_MODIFY != null and  PASSWORD != '' ">
                 PASSWORD = #{PASSWORD}
             </if>
             <if test='WITHDRAWAL != null and  WITHDRAWAL == "Y"'>
