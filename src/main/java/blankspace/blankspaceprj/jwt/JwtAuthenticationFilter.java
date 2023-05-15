@@ -44,11 +44,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String authorizationHeader = request.getHeader("Bearar");
 
-        logger.info("헤더값: " + request.getHeader("Bearar"));
         if (authorizationHeader != null) {
             //String tokenStr = JwtHeaderUtil.getAccessToken(request);
             //AuthToken token = tokenProvider.convertAuthToken(tokenStr);
 
+            logger.info("헤더값: " + request.getHeader("Bearar"));
             if (jwtTokenProvider.validateToken(authorizationHeader)) {
                 logger.info("헤더 토큰 인증 성공");
 

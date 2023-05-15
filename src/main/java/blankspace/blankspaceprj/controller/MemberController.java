@@ -6,6 +6,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
+import org.apache.ibatis.util.MapUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.view.RedirectView;
+import org.thymeleaf.util.MapUtils;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -49,9 +51,8 @@ public class MemberController {
     @ApiOperation(value="일반 회원 가입 수행", notes="일반 회원 가입을 수행하는 API")
     @RequestMapping(value = "joinMember", method = RequestMethod.POST)
     @ApiImplicitParams({@ApiImplicitParam(name = "ID", value = "유저 아이디", required = true, dataType = "String"),
+            @ApiImplicitParam(name = "AUTH_TYPE", value = "인증타입", required = true, dataType = "String"),
             @ApiImplicitParam(name = "PASSWORD", value = "비밀번호 (AUTH_TYPE = normal (일반회원가입)일 경우에만 필수)", required = true, dataType = "String"),
-            @ApiImplicitParam(name = "APP_JOIN_SECRET_KEY", value = "앱 비밀 키 (앱에서 회원가입 진행시에만 필수)", required = true, dataType = "String"),
-            @ApiImplicitParam(name = "AUTH", value = "상태", required = false, dataType = "String"),
             @ApiImplicitParam(name = "NAME", value = "이름", required = false, dataType = "String"),
             @ApiImplicitParam(name = "SALARY", value = "월급", required = false, dataType = "int"),
             @ApiImplicitParam(name = "NICKNAME", value = "닉네임", required = false, dataType = "String"),
@@ -64,7 +65,6 @@ public class MemberController {
     public ResponseEntity<?> joinMember(@RequestBody HashMap<String, Object> param) throws Exception {
         ResultDTO responseDTO = new ResultDTO();
 
-        param.put("AUTH_TYPE", "normal");
         param.put("AUTH", "normal");
         //회원가입 서비스 호출
         HashMap<String, Object> resultMap = userService.joinMember(param);
@@ -72,6 +72,10 @@ public class MemberController {
         //결과 코드 및 데이터 세팅
         responseDTO.setResultCode(resultMap.get("resultCode").toString());
         responseDTO.setResultMsg(resultMap.get("resultMsg").toString());
+
+        //비밀번호 응답 제거
+        resultMap.remove("PASSWORD");
+
         responseDTO.setData(resultMap);
 
         return new ResponseEntity<>(responseDTO, HttpStatus.OK);
@@ -107,6 +111,8 @@ public class MemberController {
         //카카오 토큰 받기 시작
         resultMap = userService.receiveKakaoToken(map);
 
+        resultMap.remove("AUTH");
+
         responseDTO.setResultCode(resultMap.get("resultCode").toString());
         responseDTO.setResultMsg(resultMap.get("resultMsg").toString());
         responseDTO.setData(resultMap);
@@ -123,7 +129,12 @@ public class MemberController {
     public ResponseEntity<?> login(@RequestBody HashMap<String, Object> param) throws Exception {
         ResultDTO responseDTO = new ResultDTO();
 
-        userService.login(param);
+        HashMap<String, Object> resultMap = userService.login(param);
+
+        responseDTO.setResultCode(resultMap.get("resultCode").toString());
+        responseDTO.setResultMsg(resultMap.get("resultMsg").toString());
+        responseDTO.setData(resultMap.get("data"));
+
         return new ResponseEntity<>(responseDTO, HttpStatus.OK);
     }
 
@@ -145,7 +156,7 @@ public class MemberController {
     }
 
     //네이버 로그인 후 CODE 받아오기. 후에 인증 시 필요함
-    @RequestMapping(value = "receiveNaverCode", method = RequestMethod.GET)
+    @RequestMapping(value = "receiveNaverCode", method = RequestMethod.POST)
     @ApiOperation(value="네이버 회원 가입 수행", notes="네이버 회원 가입을 수행하는 API")
     @ApiImplicitParams({@ApiImplicitParam(name = "code", value = "토큰", required = true, dataType = "String")
     })
@@ -164,6 +175,8 @@ public class MemberController {
         //네이버 토큰 받기 시작
         resultMap = userService.receiveNaverToken(map);
 
+        resultMap.remove("AUTH");
+
         responseDTO.setResultCode(resultMap.get("resultCode").toString());
         responseDTO.setResultMsg(resultMap.get("resultMsg").toString());
         responseDTO.setData(resultMap);
@@ -176,7 +189,9 @@ public class MemberController {
     public RedirectView google(Model model){
 
         RedirectView redirectView = new RedirectView();
-        redirectView.setUrl("https://accounts.google.com/o/oauth2/v2/auth?scope=https%3A//www.googleapis.com/auth/drive.metadata.readonly&client_id=512350550459-e79v38hs0r6k6pvlcj8ke15ntf5fdcl9.apps.googleusercontent.com&response_type=code&redirect_uri=http://localhost:8080/api/member/receiveGoogleCode");
+
+        redirectView.setUrl("https://accounts.google.com/o/oauth2/v2/auth?scope=https://www.googleapis.com/auth/userinfo.email&client_id=512350550459-e79v38hs0r6k6pvlcj8ke15ntf5fdcl9.apps.googleusercontent.com&response_type=code&redirect_uri=http://localhost:8080/api/member/receiveGoogleCode");
+
         //redirectView.setUrl("https://oauth2.googleapis.com?client_id=512350550459-e79v38hs0r6k6pvlcj8ke15ntf5fdcl9.apps.googleusercontent.com&redirect_uri=http://localhost:8080/api/member/receiveGoogleCode&grant_type=authorization_code&client_secret=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");
         return redirectView;
 
@@ -195,9 +210,11 @@ public class MemberController {
         HashMap<String, Object> resultMap;
         HashMap<String, Object> map = new HashMap<>();
         map.put("code", code);
-        //map.put("state", state);
+
         //구글 토큰 받기 시작
         resultMap = userService.receiveGoogleToken(map);
+
+        resultMap.remove("AUTH");
 
         responseDTO.setResultCode(resultMap.get("resultCode").toString());
         responseDTO.setResultMsg(resultMap.get("resultMsg").toString());
@@ -270,7 +287,7 @@ public class MemberController {
     @ApiImplicitParams({@ApiImplicitParam(name="ID", value = "유저 아이디", required = true, dataType = "String"),
             @ApiImplicitParam(name="AUTH_TYPE", value = "유저 타입", required = true, dataType = "String"),
             @ApiImplicitParam(name = "PASSWORD", value = "비밀번호 (AUTH_TYPE = normal (일반회원가입)일 경우에만 필수)", required = true, dataType = "String"),
-            @ApiImplicitParam(name = "APP_JOIN_SECRET_KEY", value = "앱 비밀 키 (앱에서 회원가입 진행시에만 필수)", required = true, dataType = "String"),
+            @ApiImplicitParam(name = "PASSWORD_MODIFY", value = "PASSWORD 변경하는 경우에만 필수(Y로 세팅)", required = true, dataType = "String"),
             @ApiImplicitParam(name = "AUTH", value = "상태", required = false, dataType = "String"),
             @ApiImplicitParam(name = "NAME", value = "이름", required = false, dataType = "String"),
             @ApiImplicitParam(name = "SALARY", value = "월급", required = false, dataType = "int"),
@@ -296,7 +313,7 @@ public class MemberController {
     //비밀번호 찾기
     @ApiOperation(value="일반 회원 비밀번호 찾기", notes="비밀번호 찾기 API (난수로 비밀번호 업데이트 후 회원정보에 등록된 이메일로 메일 발송)")
     @ApiImplicitParams({@ApiImplicitParam(name="ID", value = "유저 아이디", required = true, dataType = "String"),
-            @ApiImplicitParam(name="AUTH_TYPE", value = "유저 타입", required = true, dataType = "String")})
+            })
     @RequestMapping(value = "findNormalMemberPassword", method = RequestMethod.POST)
     @ResponseBody
     public ResponseEntity<?> findNormalMemberPassword(@RequestBody HashMap param) throws Exception {
@@ -332,5 +349,29 @@ public class MemberController {
         return new ResponseEntity<>(resultDTO, HttpStatus.OK) ;
     }
 
+    //이메일 변경 인증
+    @ApiOperation(value="회원 이메일 변경 인증", notes="변경한 이메일 인증 API (발송된 EMAIL_AUTH_CODE 와 DB 비교 후 인증여부 업데이트)")
+    @ApiImplicitParams({@ApiImplicitParam(name="ID", value = "유저 아이디", required = true, dataType = "String"),
+            @ApiImplicitParam(name="AUTH_TYPE", value = "유저 타입", required = true, dataType = "String"),
+            @ApiImplicitParam(name="EMAIL", value = "이메일", required = true, dataType = "String"),
+            @ApiImplicitParam(name="EMAIL_AUTH_CODE", value = "이메일 인증코드", required = true, dataType = "String")
+    })
+    @RequestMapping(value = "authenticateEmailAuthCode", method = RequestMethod.POST)
+    @ResponseBody
+    public ResponseEntity<?> authenticateEmailAuthCode(@RequestBody HashMap<String, Object> param) throws Exception {
+        ResultDTO resultDTO = new ResultDTO();
+        HashMap result = new HashMap();
 
+        param.put("EMAIL_AUTHENTICATE", "Y");
+        result = userService.updateMemberInfo(param);
+
+        resultDTO.setResultCode(result.get("resultCode").toString());
+        resultDTO.setResultMsg(result.get("resultMsg").toString());
+
+        return new ResponseEntity<>(resultDTO, HttpStatus.OK) ;
     }
+
+
+
+
+}

@@ -52,6 +52,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers(HttpMethod.OPTIONS).permitAll()
                 .antMatchers("/auth/**").permitAll()
                 .antMatchers("/api/member/**").permitAll()
+                //.antMatchers("/api/calendar/**").permitAll() //캘린더 임시 허용
                 .anyRequest().authenticated().and() // 해당 요청을 인증된 사용자만 사용 가능
                 .headers()
                 .frameOptions()

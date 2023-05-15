@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="blankspace.blankspaceprj.dao.CalendarDAO">
 
-    <select id="selectCalendar">
+    <select id="selectCalendar" parameterType="HashMap" resultType="HashMap">
         SELECT          /*CalenderMapper.xml - selectCalendar*/
             A.ID,
             A.AUTH_TYPE,
@@ -14,11 +14,11 @@
         WHERE 1=1
             AND A.ID = #{ID}
             AND A.AUTH_TYPE = #{AUTH_TYPE}
-            AND A.SCHEDULE_DATE = #{SCHEDULE_DATE}
+            AND A.SCHEDULE_DATE BETWEEN CONCAT(#{YEAR_MONTH},'01') AND (SELECT LAST_DAY(CONCAT(#{YEAR_MONTH},'01')))
             AND A.DEL_YN = 'N'
     </select>
 
-    <select id="selectScheduleList">
+    <select id="selectScheduleList" parameterType="HashMap" resultType="HashMap">
         SELECT              /*CalenderMapper.xml - selectScheduleList*/
             A.ID,
             A.AUTH_TYPE,
@@ -59,7 +59,7 @@
         CHK_YN = #{CHK_YN},
         TIME_START = #{TIME_START},
         TIME_END = #{TIME_END},
-        DEL_YN = #{DEL_YN}
+        DEL_YN = COALESCE(#{DEL_YN}, DEL_YN)
     </insert>
 
     <insert id="mergeCalendar">
@@ -82,8 +82,50 @@
         STATE = #{STATE},
         CONTENT = #{CONTENT},
         DAY_OFF = #{DAY_OFF},
-        DEL_YN = #{DEL_YN}
+        DEL_YN = COALESCE(#{DEL_YN}, DEL_YN)
     </insert>
 
+    <select id="selectScheduleExtraWork" parameterType="HashMap" resultType="HashMap">
+        SELECT      /* CalenderMapper.xml - selectScheduleExtraWork */
+            A.ID,
+            A.AUTH_TYPE,
+            A.SCHEDULE_DATE,
+            A.SALARY
+        FROM EXTRA_WORK A
+        WHERE A.ID = #{ID}
+            AND A.AUTH_TYPE = #{AUTH_TYPE}
+            AND A.SCHEDULE_DATE = #{SCHEDULE_DATE}
+            AND A.DEL_YN = 'N'
+    </select>
+
+    <select id="selectSumExtraWork" parameterType="HashMap" resultType="HashMap">
+        SELECT      /* CalenderMapper.xml - selectSumExtraWork 현재 달의 첫일부터 현재까지 EXTRAWORK SUM*/
+            A.ID,
+            A.AUTH_TYPE,
+            SUM(A.SALARY)
+        FROM EXTRA_WORK A
+        WHERE A.ID = #{ID}
+            AND A.AUTH_TYPE = #{AUTH_TYPE}
+            AND A.DEL_YN = 'N'
+            AND A.SCHEDULE_DATE BETWEEN (SELECT CAST(DATE_FORMAT(NOW() ,'%Y-%m-01') as DATE)) AND CURDATE()
+        GROUP BY A.ID, A.AUTH_TYPE
+    </select>
+
+    <insert id="mergeExtraWork">
+        INSERT INTO EXTRA_WORK (      /* 추가근무 등록 CalenderMapper.xml - mergeExtraWork */
+            ID,
+            AUTH_TYPE,
+            SCHEDULE_DATE,
+            SALARY
+        )
+        VALUES (
+            #{ID},
+            #{AUTH_TYPE},
+            #{SCHEDULE_DATE},
+            #{SALARY}
+        ) ON DUPLICATE KEY UPDATE
+        SALARY = #{SALARY},
+        DEL_YN = COALESCE(#{DEL_YN}, DEL_YN)
+    </insert>
 
 </mapper>

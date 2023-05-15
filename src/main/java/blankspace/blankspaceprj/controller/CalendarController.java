@@ -31,17 +31,16 @@ public class CalendarController {
     @ResponseBody
     @ApiImplicitParams({@ApiImplicitParam(name="ID", value = "유저 아이디", required = true, dataType = "String"),
             @ApiImplicitParam(name="AUTH_TYPE", value = "유저 타입", required = true, dataType = "String"),
-            @ApiImplicitParam(name="SCHEDULE_DATE", value = "일정날짜 (YYYYMMDD)", required = true, dataType = "String")})
-    @ApiOperation(value="회원별 달력 조회", notes="회원별 달력을 조회하는 API")
+            @ApiImplicitParam(name="YEAR_MONTH", value = "년월 (YYYYMM)", required = true, dataType = "String")})
+    @ApiOperation(value="회원별 월별 달력 조회", notes="회원별 월별 달력을 조회하는 API (해당 년월에 대한 List 응답)")
     public ResponseEntity<?> selectCalendar(@RequestBody HashMap<String, Object> param) throws Exception {
         ResultDTO responseDTO = new ResultDTO();
-        HashMap result = new HashMap();
 
-        result = calendarService.selectCalendar(param);
+        HashMap<String, Object> result = calendarService.selectCalendar(param);
 
         responseDTO.setResultCode(result.get("resultCode").toString());
         responseDTO.setResultMsg(result.get("resultMsg").toString());
-        responseDTO.setData(result);
+        responseDTO.setData(result.get("dataList"));
 
         logger.info("responseDTO : " + responseDTO);
         return new ResponseEntity<>(responseDTO, HttpStatus.OK);
@@ -115,5 +114,65 @@ public class CalendarController {
         return new ResponseEntity<>(responseDTO, HttpStatus.OK);
     }
 
+    @RequestMapping(value = "selectScheduleExtraWork", method = RequestMethod.POST)
+    @ResponseBody
+    @ApiImplicitParams({@ApiImplicitParam(name="ID", value = "유저 아이디", required = true, dataType = "String"),
+            @ApiImplicitParam(name="AUTH_TYPE", value = "유저 타입", required = true, dataType = "String"),
+            @ApiImplicitParam(name="SCHEDULE_DATE", value = "일정날짜 (YYYYMMDD)", required = true, dataType = "String")})
+    @ApiOperation(value="회원별 일별 추가근무 조회", notes="회원별 일별 스케줄 리스트를 조회하는 API")
+    public ResponseEntity<?> selectScheduleExtraWork(@RequestBody HashMap<String, Object> param) throws Exception {
+        ResultDTO responseDTO = new ResultDTO();
+        HashMap result = new HashMap();
+
+        result = calendarService.selectScheduleExtraWork(param);
+
+        responseDTO.setResultCode(result.get("resultCode").toString());
+        responseDTO.setResultMsg(result.get("resultMsg").toString());
+        responseDTO.setData(result.get("data"));
+
+        logger.info("responseDTO : " + responseDTO);
+        return new ResponseEntity<>(responseDTO, HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "selectSumExtraWork", method = RequestMethod.POST)
+    @ResponseBody
+    @ApiImplicitParams({@ApiImplicitParam(name="ID", value = "유저 아이디", required = true, dataType = "String"),
+            @ApiImplicitParam(name="AUTH_TYPE", value = "유저 타입", required = true, dataType = "String"),
+          })
+    @ApiOperation(value="현재 달의 첫일부터 현재까지 EXTRAWORK SUM", notes="현재 달의 첫일부터 현재일자까지 EXTRAWORK SUM을 조회하는 API")
+    public ResponseEntity<?> selectSumExtraWork(@RequestBody HashMap<String, Object> param) throws Exception {
+        ResultDTO responseDTO = new ResultDTO();
+        HashMap result = new HashMap();
+
+        result = calendarService.selectSumExtraWork(param);
+
+        responseDTO.setResultCode(result.get("resultCode").toString());
+        responseDTO.setResultMsg(result.get("resultMsg").toString());
+        responseDTO.setData(result.get("data"));
+
+        logger.info("responseDTO : " + responseDTO);
+        return new ResponseEntity<>(responseDTO, HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "mergeExtraWork", method = RequestMethod.POST)
+    @ResponseBody
+    @ApiImplicitParams({@ApiImplicitParam(name="ID", value = "유저 아이디", required = true, dataType = "String"),
+            @ApiImplicitParam(name="AUTH_TYPE", value = "유저 타입", required = true, dataType = "String"),
+            @ApiImplicitParam(name="SCHEDULE_DATE", value = "일정날짜 (YYYYMMDD)", required = true, dataType = "String"),
+            @ApiImplicitParam(name="SALARY", value = "월급", required = false, dataType = "int"),
+            @ApiImplicitParam(name="DEL_YN", value = "삭제여부 (Y 또는 N)", required = false, dataType = "String")})
+    @ApiOperation(value="회원별 추가근무 등록/업데이트", notes="회원별 추가근무 등록/업데이트 하는 API")
+    public ResponseEntity<?> mergeExtraWork(@RequestBody HashMap<String, Object> param) throws Exception {
+        ResultDTO responseDTO = new ResultDTO();
+        HashMap result = new HashMap();
+
+        result = calendarService.mergeExtraWork(param);
+
+        responseDTO.setResultCode(result.get("resultCode").toString());
+        responseDTO.setResultMsg(result.get("resultMsg").toString());
+
+        logger.info("responseDTO : " + responseDTO);
+        return new ResponseEntity<>(responseDTO, HttpStatus.OK);
+    }
 
 }
