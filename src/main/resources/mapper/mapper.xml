@@ -3,7 +3,22 @@
 <mapper namespace="blankspace.blankspaceprj.dao.MemberDAO">
 
     <select id="findAll" resultType="HashMap">
-        select * from MEMBER
+        SELECT
+            ID,
+            AUTH_TYPE,
+            NAME,
+            SALARY,
+            NICKNAME,
+            EMAIL_AUTH_CODE,
+            WORKING_DAY_CNT,
+            PHONE,
+            EMAIL,
+            DAY,
+            AUTH_STATE,
+            DATE_FORMAT(RGST_DATE, '%Y-%m-%d') AS RGST_DATE,
+            DATE_FORMAT(EMAIL_MODIFY_DATE, '%Y-%m-%d') AS EMAIL_MODIFY_DATE,
+            DATE_FORMAT(WITHDRAWAL_DATE, '%Y-%m-%d') AS WITHDRAWAL_DATE
+        FROM MEMBER
     </select>
 
     <select id="findMemberByID" resultType="HashMap" parameterType="HashMap">
@@ -19,7 +34,9 @@
             EMAIL,
             DAY,
             AUTH_STATE,
-            RGST_DATE
+            DATE_FORMAT(RGST_DATE, '%Y-%m-%d') AS RGST_DATE,
+            DATE_FORMAT(EMAIL_MODIFY_DATE, '%Y-%m-%d') AS EMAIL_MODIFY_DATE,
+            DATE_FORMAT(WITHDRAWAL_DATE, '%Y-%m-%d') AS WITHDRAWAL_DATE
         FROM MEMBER
         WHERE 1=1
             AND ID = #{ID}
@@ -54,7 +71,7 @@
             EMAIL,
             DAY,
             AUTH_STATE,
-            RGST_DATE
+            DATE_FORMAT(RGST_DATE, '%Y-%m-%d') AS RGST_DATE
         FROM MEMBER
         WHERE 1=1
             AND EMAIL = #{EMAIL}

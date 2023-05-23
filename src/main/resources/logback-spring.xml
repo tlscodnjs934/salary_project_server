@@ -8,13 +8,47 @@
         </encoder>
     </appender>
 
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 파일경로 설정 -->
+        <!--<file>/var/myapp/log/calendar_log_%d{yyyy-MM-dd}.log</file>-->
+
+        <!-- 출력패턴 설정-->
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+
+        <!-- Rolling 정책 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- .gz,.zip 등을 넣으면 자동 일자별 로그파일 압축 -->
+            <fileNamePattern>/var/myapp/logs/local/blankspace-prj-log.%d{yyyy-MM-dd}_%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <!-- 파일당 최고 용량 kb, mb, gb -->
+                <maxFileSize>100MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <!-- 일자별 로그파일 최대 보관주기(~일), 해당 설정일 이상된 파일은 자동으로 제거-->
+            <maxHistory>30</maxHistory>
+            <!--<MinIndex>1</MinIndex>
+            <MaxIndex>10</MaxIndex>-->
+        </rollingPolicy>
+    </appender>
+
+
     <root level="info">
         <appender-ref ref="console" />
+        <appender-ref ref="FILE" />
     </root>
 
     <!-- Logger -->
-    <logger name="com.*" level="debug" appender-ref="console" />
-    <logger name="jdbc.sqlonly" level="debug" appender-ref="console" />
-    <logger name="jdbc.resultsettable" level="debug" appender-ref="console" />
+    <!--<logger name="com.*" level="info" appender-ref="console" />-->
 
-</configuration>
+
+        <logger name="jdbc.sqlonly" level="error" additivity="false"/>
+
+       <logger name="jdbc.sqltiming" level="debug" appender-ref="console" additivity="false"/>
+        <logger name="jdbc.resultsettable" level="error" additivity="false"/>
+        <logger name="jdbc.resultset" level="error" additivity="false"/>
+        <logger name="jdbc.connection" level="error" additivity="false"/>
+        <logger name="jdbc.connection" level="error" additivity="false"/>
+        <logger name="jdbc.audit" level="error" additivity="false"/>
+
+    </configuration>

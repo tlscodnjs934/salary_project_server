@@ -44,7 +44,7 @@ public class MemberController {
         responseDTO.setResultCode("0");
         responseDTO.setResultMsg("회원 목록 전체 조회 완료");
         responseDTO.setData(userService.findAll());
-        logger.info("responseDTO : " + responseDTO);
+        logger.info("responseDTO : " + responseDTO.toString());
         return new ResponseEntity<>(responseDTO, HttpStatus.OK);
     }
 
@@ -138,6 +138,22 @@ public class MemberController {
         return new ResponseEntity<>(responseDTO, HttpStatus.OK);
     }
 
+    @ApiOperation(value="로그아웃 수행", notes="로그아웃을 수행하는 API")
+    @ApiImplicitParams({@ApiImplicitParam(name = "ID", value = "회원 아이디", required = true, dataType = "String")
+    })
+    @RequestMapping(value = "logout", method = RequestMethod.POST)
+    @ResponseBody
+    public ResponseEntity<?> logout(@RequestBody HashMap<String, Object> param) throws Exception {
+        ResultDTO responseDTO = new ResultDTO();
+
+        HashMap<String, Object> resultMap = userService.logout(param);
+
+        responseDTO.setResultCode(resultMap.get("resultCode").toString());
+        responseDTO.setResultMsg(resultMap.get("resultMsg").toString());
+
+        return new ResponseEntity<>(responseDTO, HttpStatus.OK);
+    }
+
     //네이버 로그인 페이지 호출
     @GetMapping("naver")
     public RedirectView naverLogin(Model model){
@@ -198,18 +214,19 @@ public class MemberController {
     }
 
     //네이버 로그인 후 CODE 받아오기. 후에 인증 시 필요함
-    @RequestMapping(value = "receiveGoogleCode", method = RequestMethod.GET)
+    @RequestMapping(value = "receiveGoogleCode", method = RequestMethod.POST)
     @ApiOperation(value="구글 회원 가입 수행", notes="구글 회원 가입을 수행하는 API")
     @ApiImplicitParams({@ApiImplicitParam(name = "code", value = "토큰", required = true, dataType = "String")
     })
     @ResponseBody
-    public ResponseEntity<?> receiveGoogleCode(@RequestParam String code) throws Exception {
-        logger.info("receiveGoogleCode 탐"+ code);
+    public ResponseEntity<?> receiveGoogleCode(//@RequestParam String code
+                                               @RequestBody HashMap<String, Object> param) throws Exception {
+        logger.info("receiveGoogleCode 탐"+ param);
 
         ResultDTO responseDTO = new ResultDTO();
         HashMap<String, Object> resultMap;
         HashMap<String, Object> map = new HashMap<>();
-        map.put("code", code);
+        map.put("code", param.get("code"));
 
         //구글 토큰 받기 시작
         resultMap = userService.receiveGoogleToken(map);

@@ -802,6 +802,18 @@ public class MemberServiceImpl {
         return result;
     }
 
+    public HashMap<String, Object> logout(HashMap param){
+        HashMap<String, Object> result = new HashMap<>();
+
+        httpSession.invalidate();
+        httpServletResponse.setHeader("Bearar", null);
+
+        result.put("resultCode", "0");
+        result.put("resultMsg", "로그아웃 완료");
+
+        return result;
+    }
+
     //EMAIL 입력을 통해 잃어버린 아이디 찾기 서비스
     public HashMap<String, Object> findUserByEmail(HashMap<String, Object> param){
         logger.info("***findUserByEmail start***" + param);
