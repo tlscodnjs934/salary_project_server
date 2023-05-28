@@ -262,8 +262,9 @@ public class MemberController {
 
         resultDTO.setResultCode(result.get("resultCode").toString());
         resultDTO.setResultMsg(result.get("resultMsg").toString());
+
         resultDTO.setData(result);
-        return new ResponseEntity<>(result, HttpStatus.OK) ;
+        return new ResponseEntity<>(resultDTO, HttpStatus.OK) ;
     }
 
     //회원가입 시 아이디 중복체크
@@ -280,7 +281,7 @@ public class MemberController {
         resultDTO.setResultMsg(result.get("resultMsg").toString());
         resultDTO.setData(result);
 
-        return new ResponseEntity<>(result, HttpStatus.OK) ;
+        return new ResponseEntity<>(resultDTO, HttpStatus.OK) ;
     }
 
     //회원가입 시 이메일 중복체크
@@ -296,7 +297,7 @@ public class MemberController {
         resultDTO.setResultCode(result.get("resultCode").toString());
         resultDTO.setResultMsg(result.get("resultMsg").toString());
 
-        return new ResponseEntity<>(result, HttpStatus.OK) ;
+        return new ResponseEntity<>(resultDTO, HttpStatus.OK) ;
     }
 
     //회원정보 수정

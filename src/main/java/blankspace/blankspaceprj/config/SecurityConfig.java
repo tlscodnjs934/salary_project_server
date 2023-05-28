@@ -1,5 +1,6 @@
 package blankspace.blankspaceprj.config;
 
+import blankspace.blankspaceprj.filter.XSSFilter;
 import blankspace.blankspaceprj.handler.JwtAccessDeniedHandler;
 import blankspace.blankspaceprj.jwt.JwtAuthenticationFilter;
 import blankspace.blankspaceprj.jwt.JwtTokenProvider;
@@ -67,6 +68,7 @@ public class SecurityConfig {
                 //.antMatchers("/api/calendar/**").permitAll() //캘린더 임시 허용
                 .anyRequest().authenticated().and() // 해당 요청을 인증된 사용자만 사용 가능
                 .headers()
+                .xssProtection().and()
                 .frameOptions()
                 .sameOrigin().and()
                 .cors().and()

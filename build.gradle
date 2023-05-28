@@ -33,6 +33,14 @@ dependencies {
 
 	//mail
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+	//xss filter
+	implementation 'com.navercorp.lucy:lucy-xss-servlet:2.0.0'
+	implementation 'com.navercorp.lucy:lucy-xss:1.6.3'
+	implementation 'org.apache.commons:commons-text:1.8'
+
+	compileOnly(group: 'commons-io', name: 'commons-io', version: '2.8.0')
+	implementation 'commons-io:commons-io:2.6'
 }
 
 tasks.named('test') {
